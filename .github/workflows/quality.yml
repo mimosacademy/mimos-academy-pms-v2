@@ -16,97 +16,56 @@ jobs:
       run:
         working-directory: apps/web
     steps:
-      - name: Checkout
-        uses: actions/checkout@v5
-      - name: Setup Node
-        uses: actions/setup-node@v5
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
         with:
           node-version: 22
-      - name: Install dependencies
-        run: npm install --no-audit --no-fund
-      - name: Lint
-        run: npm run lint
-      - name: Build
-        run: npm run build
+      - run: npm install --no-audit --no-fund
+      - run: npm run lint
+      - run: npm run build
 
   migration-static-check:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout
-        uses: actions/checkout@v5
+      - uses: actions/checkout@v5
       - name: Verify migration field constructors
         run: |
-          if grep -R "col\.fields\.add(new Field" apps/pocketbase/pb_migrations; then
-            echo "Untyped Field constructor found in migrations."
-            exit 1
-          fi
-      - name: Verify no production data directory is tracked
+          if grep -R "col\.fields\.add(new Field" apps/pocketbase/pb_migrations; then exit 1; fi
+      - name: Verify production data is not tracked
         run: |
-          if git ls-files apps/pocketbase/pb_data | grep -q .; then
-            echo "pb_data must never be committed."
-            exit 1
-          fi
-      - name: Verify no demo action handlers remain
+          if git ls-files apps/pocketbase/pb_data | grep -q .; then exit 1; fi
+      - name: Verify no demo handlers
         run: |
-          if grep -R "demoAction" apps/web/src --include='*.js' --include='*.jsx'; then
-            echo "demoAction reference found in production source."
-            exit 1
-          fi
-      - name: Verify mock data is not imported by production source
+          if grep -R "demoAction" apps/web/src --include='*.js' --include='*.jsx'; then exit 1; fi
+      - name: Verify no mock data imports
         run: |
-          if grep -R "mockData" apps/web/src --include='*.js' --include='*.jsx' | grep -v '/lib/mockData.js:'; then
-            echo "mockData import/reference found in production source."
-            exit 1
-          fi
-      - name: Verify critical business identifiers have unique database constraints
+          if grep -R "mockData" apps/web/src --include='*.js' --include='*.jsx' | grep -v '/lib/mockData.js:'; then exit 1; fi
+      - name: Verify unique business identifiers
         run: |
           required=(idx_programmes_code_unique idx_quotations_quote_no_unique idx_purchase_orders_po_no_unique idx_invoices_invoice_no_unique idx_payments_payment_no_unique)
           for index_name in "${required[@]}"; do
-            if ! grep -RlF "${index_name}" apps/pocketbase/pb_migrations >/dev/null; then
-              echo "Missing unique business identifier declaration: ${index_name}"
-              exit 1
-            fi
+            grep -RlF "$index_name" apps/pocketbase/pb_migrations >/dev/null || { echo "Missing $index_name"; exit 1; }
           done
-          echo "All critical business identifier unique indexes are declared across forward migrations."
-      - name: Verify business identifier migrations are idempotent
+      - name: Verify unique migrations are idempotent
         run: |
           files=$(grep -RlE 'CREATE UNIQUE INDEX (idx_programmes_code_unique|idx_quotations_quote_no_unique|idx_purchase_orders_po_no_unique|idx_invoices_invoice_no_unique|idx_payments_payment_no_unique)' apps/pocketbase/pb_migrations || true)
-          for file in $files; do
-            if ! grep -q 'indexes\.some' "$file"; then
-              echo "Unique index migration is not guarded for idempotent application: $file"
-              exit 1
-            fi
-          done
-          echo "All unique-index migrations are guarded for idempotent application."
-      - name: Validate V1 migration PHP syntax
+          for file in $files; do grep -q 'indexes\.some' "$file" || { echo "Not idempotent: $file"; exit 1; }; done
+      - name: Validate V1 migration
         run: php -l tools/migrate-v1-to-v2.php
-      - name: Verify V1 opportunity stages are mapped to V2 schema
-        run: |
-          if grep -nE "'stage' => \$stage|stageForV2" tools/migrate-v1-to-v2.php >/dev/null && grep -nE "'stage' => '(Early engagement|Qualified lead/Tender in progress|Proposal/Tender submitted|Negotiation stage|Verbal commitment|Contract signed/PO issued|Lost/No-go)'" tools/migrate-v1-to-v2.php >/dev/null; then
-            echo "V1-only opportunity stage value is being written directly to V2."
-            exit 1
-          fi
-      - name: Validate PocketBase hook syntax
+      - name: Validate PocketBase hook
         run: node --check apps/pocketbase/pb_hooks/financial_integrity.pb.js
-      - name: Validate role-matrix smoke script syntax
+      - name: Validate role smoke script
         run: bash -n tools/role-matrix-smoke.sh
 
   deployment-config-check:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout
-        uses: actions/checkout@v5
-      - name: Create service account for unit validation
-        run: sudo useradd --system --no-create-home --shell /usr/sbin/nologin mimos-pms || true
-      - name: Create executable placeholder for unit validation
-        run: |
-          sudo mkdir -p /var/www/mimos-pms/apps/pocketbase
-          sudo ln -sf /usr/bin/true /var/www/mimos-pms/apps/pocketbase/pocketbase
-      - name: Validate systemd unit
-        run: systemd-analyze verify systemd/mimos-pms.service
-      - name: Install NGINX for config validation
-        run: sudo apt-get update && sudo apt-get install -y nginx
-      - name: Validate NGINX reverse-proxy configuration
+      - uses: actions/checkout@v5
+      - run: sudo useradd --system --no-create-home --shell /usr/sbin/nologin mimos-pms || true
+      - run: sudo mkdir -p /var/www/mimos-pms/apps/pocketbase && sudo ln -sf /usr/bin/true /var/www/mimos-pms/apps/pocketbase/pocketbase
+      - run: systemd-analyze verify systemd/mimos-pms.service
+      - run: sudo apt-get update && sudo apt-get install -y nginx
+      - name: Validate NGINX
         run: |
           mkdir -p /tmp/mimos-nginx/logs /tmp/mimos-nginx/run
           sed -e 's/listen 80;/listen 8080;/' -e 's/listen \[::\]:80;/listen [::]:8080;/' nginx/mimos-pms-api.conf > /tmp/mimos-nginx/mimos-pms-api.conf
@@ -126,18 +85,15 @@ jobs:
     runs-on: ubuntu-latest
     needs: migration-static-check
     steps:
-      - name: Checkout
-        uses: actions/checkout@v5
-      - name: Verify PocketBase binary version
+      - uses: actions/checkout@v5
+      - name: Verify PocketBase version
         working-directory: apps/pocketbase
         run: |
           chmod +x pocketbase
           expected="$(tr -d '\r\n' < .pocketbase-version)"
-          actual="$(./pocketbase --version | head -n 1)"
-          echo "Expected PocketBase version: $expected"
-          echo "Binary reports: $actual"
+          actual="$(./pocketbase --version | head -n1)"
           echo "$actual" | grep -F "$expected"
-      - name: Run fresh PocketBase migration smoke test
+      - name: Fresh migration
         working-directory: apps/pocketbase
         env:
           PB_ENCRYPTION_KEY: 0123456789abcdef0123456789abcdef
@@ -146,14 +102,9 @@ jobs:
         run: |
           rm -rf /tmp/mimos-pb-smoke
           mkdir -p /tmp/mimos-pb-smoke
-          ./pocketbase migrate up \
-            --encryptionEnv=PB_ENCRYPTION_KEY \
-            --dir=/tmp/mimos-pb-smoke \
-            --migrationsDir=./pb_migrations \
-            --hooksDir=./pb_hooks
+          ./pocketbase migrate up --encryptionEnv=PB_ENCRYPTION_KEY --dir=/tmp/mimos-pb-smoke --migrationsDir=./pb_migrations --hooksDir=./pb_hooks
           test -f /tmp/mimos-pb-smoke/data.db
-          echo "Fresh PocketBase migration completed successfully."
-      - name: Boot PocketBase and verify health/auth/role matrix
+      - name: Boot, bootstrap superuser, authenticate, and run E2E
         working-directory: apps/pocketbase
         env:
           PB_ENCRYPTION_KEY: 0123456789abcdef0123456789abcdef
@@ -161,34 +112,12 @@ jobs:
           PB_SUPERUSER_PASSWORD: CiTest-Password-2026-Strong!
           PB_BASE_URL: http://127.0.0.1:8090
         run: |
-          set -o pipefail
-          ./pocketbase serve \
-            --http=127.0.0.1:8090 \
-            --encryptionEnv=PB_ENCRYPTION_KEY \
-            --dir=/tmp/mimos-pb-smoke \
-            --migrationsDir=./pb_migrations \
-            --hooksDir=./pb_hooks > /tmp/mimos-pocketbase.log 2>&1 &
+          ./pocketbase superuser upsert "$PB_SUPERUSER_EMAIL" "$PB_SUPERUSER_PASSWORD" --dir=/tmp/mimos-pb-smoke
+          ./pocketbase serve --http=127.0.0.1:8090 --encryptionEnv=PB_ENCRYPTION_KEY --dir=/tmp/mimos-pb-smoke --migrationsDir=./pb_migrations --hooksDir=./pb_hooks >/tmp/mimos-pocketbase.log 2>&1 &
           PB_PID=$!
           trap 'kill $PB_PID 2>/dev/null || true' EXIT
-          for attempt in $(seq 1 30); do
-            if curl -fsS http://127.0.0.1:8090/api/health >/dev/null; then break; fi
-            sleep 1
-          done
-          if ! curl -fsS http://127.0.0.1:8090/api/health >/dev/null; then
-            echo "PocketBase failed health check. Server log:"
-            cat /tmp/mimos-pocketbase.log
-            exit 1
-          fi
-          auth_status=$(curl -sS -o /tmp/mimos-auth.json -w '%{http_code}' \
-            -X POST -H 'Content-Type: application/json' \
-            -d "{\"identity\":\"${PB_SUPERUSER_EMAIL}\",\"password\":\"${PB_SUPERUSER_PASSWORD}\"}" \
-            http://127.0.0.1:8090/api/collections/_superusers/auth-with-password)
-          if [ "$auth_status" != "200" ]; then
-            echo "PocketBase superuser authentication failed with HTTP $auth_status."
-            cat /tmp/mimos-auth.json
-            echo "Server log:"
-            cat /tmp/mimos-pocketbase.log
-            exit 1
-          fi
+          for attempt in $(seq 1 30); do curl -fsS "$PB_BASE_URL/api/health" >/dev/null && break || sleep 1; done
+          curl -fsS "$PB_BASE_URL/api/health" >/dev/null || { cat /tmp/mimos-pocketbase.log; exit 1; }
+          auth_status=$(curl -sS -o /tmp/mimos-auth.json -w '%{http_code}' -X POST -H 'Content-Type: application/json' -d "{\"identity\":\"$PB_SUPERUSER_EMAIL\",\"password\":\"$PB_SUPERUSER_PASSWORD\"}" "$PB_BASE_URL/api/collections/_superusers/auth-with-password")
+          [ "$auth_status" = 200 ] || { cat /tmp/mimos-auth.json; cat /tmp/mimos-pocketbase.log; exit 1; }
           bash ../../tools/role-matrix-smoke.sh
-          echo "PocketBase health, authentication and seven-role authorization verified."
