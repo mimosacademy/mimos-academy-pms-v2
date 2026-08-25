@@ -17,9 +17,9 @@ jobs:
         working-directory: apps/web
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
       - name: Setup Node
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v5
         with:
           node-version: 22
       - name: Install dependencies
@@ -33,7 +33,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
       - name: Verify migration field constructors
         run: |
           if grep -R "col\.fields\.add(new Field" apps/pocketbase/pb_migrations; then
@@ -95,7 +95,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
       - name: Create service account for unit validation
         run: sudo useradd --system --no-create-home --shell /usr/sbin/nologin mimos-pms || true
       - name: Create executable placeholder for unit validation
@@ -109,7 +109,7 @@ jobs:
       - name: Validate NGINX reverse-proxy configuration
         run: |
           mkdir -p /tmp/mimos-nginx/logs /tmp/mimos-nginx/run
-          sed 's/listen 80;/listen 8080;/' nginx/mimos-pms-api.conf > /tmp/mimos-nginx/mimos-pms-api.conf
+          sed -e 's/listen 80;/listen 8080;/' -e 's/listen \[::\]:80;/listen [::]:8080;/' nginx/mimos-pms-api.conf > /tmp/mimos-nginx/mimos-pms-api.conf
           cat > /tmp/mimos-nginx/nginx.conf <<'EOF'
           pid /tmp/mimos-nginx/run/nginx.pid;
           error_log /tmp/mimos-nginx/logs/error.log;
@@ -127,7 +127,7 @@ jobs:
     needs: migration-static-check
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
       - name: Verify PocketBase binary version
         working-directory: apps/pocketbase
         run: |
