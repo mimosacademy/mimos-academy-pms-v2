@@ -30,6 +30,18 @@ login_token() {
     | sed '$d' | python3 -c 'import json,sys; print(json.load(sys.stdin)["token"])'
 }
 
+create_record() {
+  local token="$1" collection="$2" payload="$3"
+  curl -fsS -X POST -H "Authorization: $token" -H 'Content-Type: application/json' \
+    -d "$payload" "$BASE_URL/api/collections/$collection/records"
+}
+
+update_record() {
+  local token="$1" collection="$2" id="$3" payload="$4"
+  curl -fsS -X PATCH -H "Authorization: $token" -H 'Content-Type: application/json' \
+    -d "$payload" "$BASE_URL/api/collections/$collection/records/$id"
+}
+
 ADMIN_TOKEN="$(login_token _superusers "$ADMIN_EMAIL" "$ADMIN_PASSWORD")"
 AUTH_HEADER="Authorization: $ADMIN_TOKEN"
 
@@ -44,9 +56,11 @@ for role in "${roles[@]}"; do
     "$BASE_URL/api/collections/users/records" >"$TMP_DIR/${role}.json"
 done
 
-login_role() {
-  local role="$1"
-  login_token users "ci-${role}@example.invalid" 'CiRole-Password-2026-Strong!'
+login_role() { login_token users "ci-$1@example.invalid" 'CiRole-Password-2026-Strong!'; }
+role_id() { python3 - "$TMP_DIR/$1.json" <<'PY'
+import json,sys
+with open(sys.argv[1]) as f: print(json.load(f)['id'])
+PY
 }
 
 # Read matrix: users are restricted to Super Admin/Manager; operational records are readable by authenticated roles.
@@ -82,4 +96,33 @@ expect_create_status viewer 403 users
 expect_create_status viewer 403 audit_history
 expect_create_status manager 400 audit_history
 
-echo "Role matrix authorization smoke test passed."
+# Financial integrity E2E: create a real invoice and payment, then prove the server hook
+# rejects an overpayment and an invoice reduction below recorded collections.
+MANAGER_TOKEN="$(login_role manager)"
+FINANCE_TOKEN="$(login_role finance)"
+MANAGER_ID="$(role_id manager)"
+
+CLIENT_JSON="$(create_record "$MANAGER_TOKEN" clients "{\"name\":\"CI Financial Integrity Client\",\"status\":\"Active\",\"createdBy\":\"$MANAGER_ID\"")" || true
+# The payload above is intentionally built in the next command to keep shell quoting explicit.
+CLIENT_JSON="$(create_record "$MANAGER_TOKEN" clients "{\"name\":\"CI Financial Integrity Client\",\"status\":\"Active\",\"createdBy\":\"$MANAGER_ID\"}")"
+CLIENT_ID="$(printf '%s' "$CLIENT_JSON" | python3 -c 'import json,sys; print(json.load(sys.stdin)["id"])')"
+
+PROGRAMME_JSON="$(create_record "$MANAGER_TOKEN" programmes "{\"client\":\"$CLIENT_ID\",\"code\":\"CI-FIN-001\",\"title\":\"CI Financial Integrity Programme\",\"status\":\"Scheduled\",\"contractValue\":1000,\"createdBy\":\"$MANAGER_ID\"}")"
+PROGRAMME_ID="$(printf '%s' "$PROGRAMME_JSON" | python3 -c 'import json,sys; print(json.load(sys.stdin)["id"])')"
+
+FINANCE_ID="$(role_id finance)"
+INVOICE_JSON="$(create_record "$FINANCE_TOKEN" invoices "{\"programme\":\"$PROGRAMME_ID\",\"client\":\"$CLIENT_ID\",\"invoiceNo\":\"CI-INV-001\",\"description\":\"CI integrity test\",\"amount\":1000,\"paidAmount\":0,\"status\":\"Unpaid\",\"createdBy\":\"$FINANCE_ID\"}")"
+INVOICE_ID="$(printf '%s' "$INVOICE_JSON" | python3 -c 'import json,sys; print(json.load(sys.stdin)["id"])')"
+
+create_record "$FINANCE_TOKEN" payments "{\"invoice\":\"$INVOICE_ID\",\"programme\":\"$PROGRAMME_ID\",\"client\":\"$CLIENT_ID\",\"paymentNo\":\"CI-PAY-001\",\"amount\":600,\"method\":\"Bank Transfer\",\"status\":\"Completed\",\"createdBy\":\"$FINANCE_ID\"}" >/dev/null
+
+# Overpayment must be rejected server-side.
+expect_status 400 -X POST -H "Authorization: $FINANCE_TOKEN" -H 'Content-Type: application/json' \
+  -d "{\"invoice\":\"$INVOICE_ID\",\"programme\":\"$PROGRAMME_ID\",\"client\":\"$CLIENT_ID\",\"paymentNo\":\"CI-PAY-002\",\"amount\":401,\"method\":\"Bank Transfer\",\"status\":\"Completed\",\"createdBy\":\"$FINANCE_ID\"}" \
+  "$BASE_URL/api/collections/payments/records"
+
+# Invoice total cannot be reduced below the already collected RM600.
+expect_status 400 -X PATCH -H "Authorization: $FINANCE_TOKEN" -H 'Content-Type: application/json' \
+  -d '{"amount":500}' "$BASE_URL/api/collections/invoices/records/$INVOICE_ID"
+
+echo "Role matrix and financial integrity E2E smoke tests passed."
