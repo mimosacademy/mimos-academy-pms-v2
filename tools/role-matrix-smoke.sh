@@ -9,7 +9,7 @@ trap 'rm -rf "$TMP_DIR"' EXIT
 api(){ curl -sS -w '\n%{http_code}' "$@"; }
 status(){ printf '%s' "$1" | tail -n1; }
 body(){ printf '%s' "$1" | sed '$d'; }
-expect(){ local e="$1"; shift; local r s; r="$(api "$@")"; s="$(status "$r")"; [[ "$s" == "$e" ]] || { echo "Expected HTTP $e, got $s: $*"; printf '%s\n' "$(body "$r")"; return 1; }; }
+expect(){ local e="$1"; shift; local r s; r="$(api "$@"); s="$(status "$r")"; [[ "$s" == "$e" ]] || { echo "Expected HTTP $e, got $s: $*"; printf '%s\n' "$(body "$r")"; return 1; }; }
 login(){
   local collection="$1" identity="$2" password="$3" response code payload
   response="$(api -X POST -H 'Content-Type: application/json' -d "{\"identity\":\"$identity\",\"password\":\"$password\"}" "$BASE_URL/api/collections/$collection/auth-with-password")"
@@ -20,7 +20,10 @@ login(){
     printf '%s\n' "$payload" >&2
     return 1
   fi
-  printf '%s' "$payload" | python3 -c 'import json,sys; data=json.load(sys.stdin); token=data.get("token"); raise SystemExit("Authentication response did not contain token: "+json.dumps(data)) if not token else print(token)'
+  printf '%s' "$payload" | python3 -c 'import json,sys; data=json.load(sys.stdin); token=data.get("token");
+if not token:
+    raise SystemExit("Authentication response did not contain token: "+json.dumps(data))
+print(token)'
 }
 create(){
   local token="$1" collection="$2" payload="$3" response code
