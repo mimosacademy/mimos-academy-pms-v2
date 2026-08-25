@@ -73,3 +73,11 @@ jobs:
               exit 1
             fi
           done
+      - name: Validate V1 migration PHP syntax
+        run: php -l tools/migrate-v1-to-v2.php
+      - name: Verify V1 opportunity stages are mapped to V2 schema
+        run: |
+          if grep -nE "'stage' => \$stage|stageForV2" tools/migrate-v1-to-v2.php >/dev/null && grep -nE "'stage' => '(Early engagement|Qualified lead/Tender in progress|Proposal/Tender submitted|Negotiation stage|Verbal commitment|Contract signed/PO issued|Lost/No-go)'" tools/migrate-v1-to-v2.php >/dev/null; then
+            echo "V1-only opportunity stage value is being written directly to V2."
+            exit 1
+          fi
