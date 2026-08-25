@@ -97,6 +97,8 @@ jobs:
           fi
       - name: Validate PocketBase hook syntax
         run: node --check apps/pocketbase/pb_hooks/financial_integrity.pb.js
+      - name: Validate role-matrix smoke script syntax
+        run: bash -n tools/role-matrix-smoke.sh
 
   pocketbase-smoke:
     runs-on: ubuntu-latest
@@ -129,12 +131,13 @@ jobs:
             --hooksDir=./pb_hooks
           test -f /tmp/mimos-pb-smoke/data.db
           echo "Fresh PocketBase migration completed successfully."
-      - name: Boot PocketBase and verify health/auth
+      - name: Boot PocketBase and verify health/auth/role matrix
         working-directory: apps/pocketbase
         env:
           PB_ENCRYPTION_KEY: 0123456789abcdef0123456789abcdef
           PB_SUPERUSER_EMAIL: ci-admin@example.invalid
           PB_SUPERUSER_PASSWORD: CiTest-Password-2026-Strong!
+          PB_BASE_URL: http://127.0.0.1:8090
         run: |
           ./pocketbase serve \
             --http=127.0.0.1:8090 \
@@ -156,4 +159,5 @@ jobs:
             -H 'Content-Type: application/json' \
             -d '{"identity":"ci-admin@example.invalid","password":"CiTest-Password-2026-Strong!"}' \
             http://127.0.0.1:8090/api/collections/_superusers/auth-with-password >/dev/null
-          echo "PocketBase health endpoint and superuser authentication verified."
+          bash ../../tools/role-matrix-smoke.sh
+          echo "PocketBase health, authentication and seven-role authorization verified."
