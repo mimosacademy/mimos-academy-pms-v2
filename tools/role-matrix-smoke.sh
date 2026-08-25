@@ -9,7 +9,7 @@ trap 'rm -rf "$TMP_DIR"' EXIT
 api(){ curl -sS -w '\n%{http_code}' "$@"; }
 status(){ printf '%s' "$1" | tail -n1; }
 body(){ printf '%s' "$1" | sed '$d'; }
-expect(){ local e="$1"; shift; local r s; r="$(api "$@")"; s="$(status "$r")"; [[ "$s" == "$e" ]] || { echo "Expected HTTP $e, got $s: $*"; printf '%s\n' "$r"; return 1; }; }
+expect(){ local e="$1"; shift; local r s; r="$(api "$@")"; s="$(status "$r")"; [[ "$s" == "$e" ]] || { echo "Expected HTTP $e, got $s: $*"; printf '%s\n' "$(body "$r")"; return 1; }; }
 login(){
   local collection="$1" identity="$2" password="$3" response code payload
   response="$(api -X POST -H 'Content-Type: application/json' -d "{\"identity\":\"$identity\",\"password\":\"$password\"}" "$BASE_URL/api/collections/$collection/auth-with-password")"
@@ -56,8 +56,8 @@ for role in "${roles[@]}"; do
 done
 manager="$(login_role manager)"; viewer="$(login_role viewer)"; sales="$(login_role sales)"; finance="$(login_role finance)"; trainer="$(login_role trainer)"
 expect 200 -H "Authorization: $manager" "$BASE_URL/api/collections/users/records?perPage=1"
-r="$(api -H "Authorization: $viewer" "$BASE_URL/api/collections/users/records?perPage=1")"; [[ "$(status "$r")" == 200 ]] || exit 1
-[[ "$(body "$r" | python3 -c 'import json,sys; print(json.load(sys.stdin).get("totalItems",-1))')" == 0 ]] || exit 1
+r="$(api -H "Authorization: $viewer" "$BASE_URL/api/collections/users/records?perPage=1")"; [[ "$(status "$r")" == 200 ]] || { echo 'Viewer list request failed'; body "$r"; exit 1; }
+[[ "$(body "$r" | python3 -c 'import json,sys; print(json.load(sys.stdin).get("totalItems",-1))')" == 0 ]] || { echo 'Viewer unexpectedly received user records'; body "$r"; exit 1; }
 SALES_ID="$(role_id sales)"; MANAGER_ID="$(role_id manager)"; FINANCE_ID="$(role_id finance)"
 expect 200 -X POST -H "Authorization: $sales" -H 'Content-Type: application/json' -d "{\"name\":\"CI Sales Client\",\"status\":\"Active\",\"createdBy\":\"$SALES_ID\"}" "$BASE_URL/api/collections/clients/records"
 expect 400 -X POST -H "Authorization: $viewer" -H 'Content-Type: application/json' -d "{\"name\":\"CI Viewer Denied\",\"status\":\"Active\",\"createdBy\":\"$SALES_ID\"}" "$BASE_URL/api/collections/clients/records"
