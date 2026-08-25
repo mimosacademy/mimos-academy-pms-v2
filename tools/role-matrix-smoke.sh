@@ -22,6 +22,16 @@ expect_status() {
   fi
 }
 
+expect_empty_list() {
+  local token="$1" url="$2" response status body total
+  response="$(api -H "Authorization: $token" "$url")"
+  status="$(printf '%s' "$response" | tail -n 1)"
+  body="$(printf '%s' "$response" | sed '$d')"
+  [[ "$status" == "200" ]] || { echo "Expected HTTP 200 list response, got $status"; printf '%s\n' "$response"; return 1; }
+  total="$(printf '%s' "$body" | python3 -c 'import json,sys; print(json.load(sys.stdin).get("totalItems",-1))')"
+  [[ "$total" == "0" ]] || { echo "Expected filtered list to contain zero records, got $total"; printf '%s\n' "$body"; return 1; }
+}
+
 login_token() {
   local collection="$1" identity="$2" password="$3"
   api -X POST -H 'Content-Type: application/json' \
@@ -56,11 +66,12 @@ with open(sys.argv[1]) as f: print(json.load(f)['id'])
 PY
 }
 
-# Read matrix: users are restricted to Super Admin/Manager; operational records are readable by authenticated roles.
+# List rules are record filters: a denied list request returns HTTP 200 with zero records.
 token="$(login_role manager)"
 expect_status 200 -H "Authorization: $token" "$BASE_URL/api/collections/users/records?perPage=1"
 token="$(login_role viewer)"
-expect_status 403 -H "Authorization: $token" "$BASE_URL/api/collections/users/records?perPage=1"
+expect_empty_list "$token" "$BASE_URL/api/collections/users/records?perPage=1"
+
 for role in finance sales programme_pic trainer viewer; do
   token="$(login_role "$role")"
   expect_status 200 -H "Authorization: $token" "$BASE_URL/api/collections/clients/records?perPage=1"
@@ -96,19 +107,15 @@ FINANCE_ID="$(role_id finance)"
 
 CLIENT_JSON="$(create_record "$MANAGER_TOKEN" clients "{\"name\":\"CI Financial Integrity Client\",\"status\":\"Active\",\"createdBy\":\"$MANAGER_ID\"}")"
 CLIENT_ID="$(printf '%s' "$CLIENT_JSON" | python3 -c 'import json,sys; print(json.load(sys.stdin)["id"])')"
-
 PROGRAMME_JSON="$(create_record "$MANAGER_TOKEN" programmes "{\"client\":\"$CLIENT_ID\",\"code\":\"CI-FIN-001\",\"title\":\"CI Financial Integrity Programme\",\"status\":\"Scheduled\",\"contractValue\":1000,\"createdBy\":\"$MANAGER_ID\"}")"
 PROGRAMME_ID="$(printf '%s' "$PROGRAMME_JSON" | python3 -c 'import json,sys; print(json.load(sys.stdin)["id"])')"
-
 INVOICE_JSON="$(create_record "$FINANCE_TOKEN" invoices "{\"programme\":\"$PROGRAMME_ID\",\"client\":\"$CLIENT_ID\",\"invoiceNo\":\"CI-INV-001\",\"description\":\"CI integrity test\",\"amount\":1000,\"paidAmount\":0,\"status\":\"Unpaid\",\"createdBy\":\"$FINANCE_ID\"}")"
 INVOICE_ID="$(printf '%s' "$INVOICE_JSON" | python3 -c 'import json,sys; print(json.load(sys.stdin)["id"])')"
 
 create_record "$FINANCE_TOKEN" payments "{\"invoice\":\"$INVOICE_ID\",\"programme\":\"$PROGRAMME_ID\",\"client\":\"$CLIENT_ID\",\"paymentNo\":\"CI-PAY-001\",\"amount\":600,\"method\":\"Bank Transfer\",\"status\":\"Completed\",\"createdBy\":\"$FINANCE_ID\"}" >/dev/null
-
 expect_status 400 -X POST -H "Authorization: $FINANCE_TOKEN" -H 'Content-Type: application/json' \
   -d "{\"invoice\":\"$INVOICE_ID\",\"programme\":\"$PROGRAMME_ID\",\"client\":\"$CLIENT_ID\",\"paymentNo\":\"CI-PAY-002\",\"amount\":401,\"method\":\"Bank Transfer\",\"status\":\"Completed\",\"createdBy\":\"$FINANCE_ID\"}" \
   "$BASE_URL/api/collections/payments/records"
-
 expect_status 400 -X PATCH -H "Authorization: $FINANCE_TOKEN" -H 'Content-Type: application/json' \
   -d '{"amount":500}' "$BASE_URL/api/collections/invoices/records/$INVOICE_ID"
 
