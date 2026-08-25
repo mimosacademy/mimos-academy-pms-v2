@@ -44,7 +44,7 @@ login() {
     return 1
   fi
 
-  python3 -c 'import json,sys
+  printf '%s' "$payload" | python3 -c 'import json,sys
 payload=json.load(sys.stdin)
 token=payload.get("token")
 if not token:
