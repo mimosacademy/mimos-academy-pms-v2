@@ -128,5 +128,32 @@ jobs:
             --migrationsDir=./pb_migrations \
             --hooksDir=./pb_hooks
           test -f /tmp/mimos-pb-smoke/data.db
-          test -f /tmp/mimos-pb-smoke/logs.db || true
           echo "Fresh PocketBase migration completed successfully."
+      - name: Boot PocketBase and verify health/auth
+        working-directory: apps/pocketbase
+        env:
+          PB_ENCRYPTION_KEY: 0123456789abcdef0123456789abcdef
+          PB_SUPERUSER_EMAIL: ci-admin@example.invalid
+          PB_SUPERUSER_PASSWORD: CiTest-Password-2026-Strong!
+        run: |
+          ./pocketbase serve \
+            --http=127.0.0.1:8090 \
+            --encryptionEnv=PB_ENCRYPTION_KEY \
+            --dir=/tmp/mimos-pb-smoke \
+            --migrationsDir=./pb_migrations \
+            --hooksDir=./pb_hooks > /tmp/mimos-pocketbase.log 2>&1 &
+          PB_PID=$!
+          trap 'kill $PB_PID 2>/dev/null || true' EXIT
+          for attempt in $(seq 1 30); do
+            if curl -fsS http://127.0.0.1:8090/api/health >/dev/null; then
+              break
+            fi
+            sleep 1
+          done
+          curl -fsS http://127.0.0.1:8090/api/health >/dev/null
+          curl -fsS \
+            -X POST \
+            -H 'Content-Type: application/json' \
+            -d '{"identity":"ci-admin@example.invalid","password":"CiTest-Password-2026-Strong!"}' \
+            http://127.0.0.1:8090/api/collections/_superusers/auth-with-password >/dev/null
+          echo "PocketBase health endpoint and superuser authentication verified."
