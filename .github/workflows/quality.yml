@@ -97,3 +97,36 @@ jobs:
           fi
       - name: Validate PocketBase hook syntax
         run: node --check apps/pocketbase/pb_hooks/financial_integrity.pb.js
+
+  pocketbase-smoke:
+    runs-on: ubuntu-latest
+    needs: migration-static-check
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Verify PocketBase binary version
+        working-directory: apps/pocketbase
+        run: |
+          chmod +x pocketbase
+          expected="$(tr -d '\r\n' < .pocketbase-version)"
+          actual="$(./pocketbase --version | head -n 1)"
+          echo "Expected PocketBase version: $expected"
+          echo "Binary reports: $actual"
+          echo "$actual" | grep -F "$expected"
+      - name: Run fresh PocketBase migration smoke test
+        working-directory: apps/pocketbase
+        env:
+          PB_ENCRYPTION_KEY: 0123456789abcdef0123456789abcdef
+          PB_SUPERUSER_EMAIL: ci-admin@example.invalid
+          PB_SUPERUSER_PASSWORD: CiTest-Password-2026-Strong!
+        run: |
+          rm -rf /tmp/mimos-pb-smoke
+          mkdir -p /tmp/mimos-pb-smoke
+          ./pocketbase migrate up \
+            --encryptionEnv=PB_ENCRYPTION_KEY \
+            --dir=/tmp/mimos-pb-smoke \
+            --migrationsDir=./pb_migrations \
+            --hooksDir=./pb_hooks
+          test -f /tmp/mimos-pb-smoke/data.db
+          test -f /tmp/mimos-pb-smoke/logs.db || true
+          echo "Fresh PocketBase migration completed successfully."
