@@ -21,7 +21,7 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
       - name: Install dependencies
         run: npm install --no-audit --no-fund
       - name: Lint
@@ -44,5 +44,17 @@ jobs:
         run: |
           if git ls-files apps/pocketbase/pb_data | grep -q .; then
             echo "pb_data must never be committed."
+            exit 1
+          fi
+      - name: Verify no demo action handlers remain
+        run: |
+          if grep -R "demoAction" apps/web/src --include='*.js' --include='*.jsx'; then
+            echo "demoAction reference found in production source."
+            exit 1
+          fi
+      - name: Verify mock data is not imported by production source
+        run: |
+          if grep -R "mockData" apps/web/src --include='*.js' --include='*.jsx' | grep -v '/lib/mockData.js:'; then
+            echo "mockData import/reference found in production source."
             exit 1
           fi
