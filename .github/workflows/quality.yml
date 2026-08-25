@@ -81,3 +81,5 @@ jobs:
             echo "V1-only opportunity stage value is being written directly to V2."
             exit 1
           fi
+      - name: Validate PocketBase hook syntax
+        run: node --check apps/pocketbase/pb_hooks/financial_integrity.pb.js
