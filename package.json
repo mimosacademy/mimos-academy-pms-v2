@@ -1,0 +1,19 @@
+{
+  "name": "monorepo",
+  "version": "0.0.0",
+  "private": true,
+  "scripts": {
+    "setup": "npm install",
+    "build": "npm run build --prefix apps/web",
+    "dev": "npm run dev --prefix apps/web",
+    "start": "npm run start --prefix apps/pocketbase",
+    "lint": "npm run lint --prefix apps/web"
+  },
+  "devDependencies": {
+    "concurrently": "^10.0.4",
+    "knip": "^6.32.1"
+  },
+  "workspaces": [
+    "apps/*"
+  ]
+}
