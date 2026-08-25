@@ -58,3 +58,26 @@ jobs:
             echo "mockData import/reference found in production source."
             exit 1
           fi
+      - name: Verify critical business identifiers have unique database constraints
+        run: |
+          required=(
+            "idx_programmes_code_unique"
+            "idx_quotations_quote_no_unique"
+            "idx_purchase_orders_po_no_unique"
+            "idx_invoices_invoice_no_unique"
+            "idx_payments_payment_no_unique"
+          )
+          for index_name in "${required[@]}"; do
+            if ! grep -R "CREATE UNIQUE INDEX ${index_name}" apps/pocketbase/pb_migrations >/dev/null; then
+              echo "Missing unique business identifier constraint: ${index_name}"
+              exit 1
+            fi
+          done
+      - name: Validate V1 migration PHP syntax
+        run: php -l tools/migrate-v1-to-v2.php
+      - name: Verify V1 opportunity stages are mapped to V2 schema
+        run: |
+          if grep -nE "'stage' => \$stage|stageForV2" tools/migrate-v1-to-v2.php >/dev/null && grep -nE "'stage' => '(Early engagement|Qualified lead/Tender in progress|Proposal/Tender submitted|Negotiation stage|Verbal commitment|Contract signed/PO issued|Lost/No-go)'" tools/migrate-v1-to-v2.php >/dev/null; then
+            echo "V1-only opportunity stage value is being written directly to V2."
+            exit 1
+          fi
