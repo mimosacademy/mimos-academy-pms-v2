@@ -95,9 +95,8 @@ const mapPayment = (r) => ({
 
 const mapAction = (r) => ({
   id: r.id, client: r.client || '', service: r.service || '', title: r.title,
-  relatedTo: r.relatedTo || '', programmeId: r.programme || null,
-  programmeCode: r.expand?.programme?.code || '', owner: r.owner || '',
-  personInCharge: r.personInCharge || '', personEmail: r.personEmail || '',
+  relatedTo: r.relatedTo || '', programmeId: r.programme || null, programmeCode: r.expand?.programme?.code || '',
+  owner: r.owner || '', personInCharge: r.personInCharge || '', personEmail: r.personEmail || '',
   dueDate: r.dueDate || '', status: r.status || 'Open', potentialRevenue: Number(r.potentialRevenue || 0),
   agingDays: Number(r.agingDays || 0), notes: r.notes || '', priority: r.priority || 'Medium',
 });
@@ -124,13 +123,12 @@ const mapTraining = (r) => ({
 const mapParticipant = (r) => ({
   id: r.id, programmeId: r.programme, client: r.client || null,
   programmeCode: r.expand?.programme?.code || '', programmeTitle: r.expand?.programme?.title || '',
-  name: r.name, email: r.email || '', company: r.company || '', phone: r.phone || '',
-  status: r.status || 'Confirmed',
+  name: r.name, email: r.email || '', company: r.company || '', phone: r.phone || '', status: r.status || 'Confirmed',
 });
 
 const mapDocument = (r) => ({
-  id: r.id, programmeId: r.programme, name: r.name, type: r.type || '',
-  uploadedBy: r.uploadedBy || '', date: r.date || '', size: r.size || '',
+  id: r.id, programmeId: r.programme, name: r.name, type: r.type || '', uploadedBy: r.uploadedBy || '',
+  date: r.date || '', size: r.size || '',
 });
 
 const mapAudit = (r) => ({
@@ -141,8 +139,12 @@ const mapAudit = (r) => ({
 const makeTotals = (invoices) => {
   const revenue = invoices.reduce((s, i) => s + Number(i.totalAmount || i.amount || 0), 0);
   const collected = invoices.reduce((s, i) => s + Number(i.collectionAmount || i.paidAmount || 0), 0);
-  const outstanding = Math.max(revenue - collected, 0);
-  const overdue = invoices.filter((i) => i.status === 'Overdue' || (i.dueDate && new Date(i.dueDate) < new Date() && outstanding > 0)).reduce((s, i) => s + Math.max(Number(i.totalAmount || i.amount || 0) - Number(i.collectionAmount || i.paidAmount || 0), 0), 0);
+  const outstanding = invoices.reduce((s, i) => s + Math.max(Number(i.totalAmount || i.amount || 0) - Number(i.collectionAmount || i.paidAmount || 0), 0), 0);
+  const overdue = invoices.reduce((s, i) => {
+    const invoiceOutstanding = Math.max(Number(i.totalAmount || i.amount || 0) - Number(i.collectionAmount || i.paidAmount || 0), 0);
+    const isOverdue = i.status === 'Overdue' || (i.dueDate && new Date(i.dueDate) < new Date());
+    return s + (isOverdue ? invoiceOutstanding : 0);
+  }, 0);
   return { revenue, collected, outstanding, overdue };
 };
 
@@ -164,17 +166,15 @@ export function PmsDataProvider({ children }) {
   const { isAuthed } = useAuth();
   const [state, setState] = useState({
     loading: true, error: '', clients: [], clientContacts: [], programmes: [], opportunities: [],
-    quotations: [], purchaseOrders: [], invoices: [], payments: [], trainingSessions: [],
-    trainingStatistics: [], participants: [], actionItems: [], documents: [], auditHistory: [], notifications: [],
+    quotations: [], purchaseOrders: [], invoices: [], payments: [], trainingSessions: [], trainingStatistics: [],
+    participants: [], actionItems: [], documents: [], auditHistory: [], notifications: [],
   });
 
   const refresh = useCallback(async () => {
     setState((s) => ({ ...s, loading: true, error: '' }));
     try {
-      const [
-        clientsRaw, contactsRaw, programmesRaw, opportunitiesRaw, quotationsRaw, poRaw,
-        invoicesRaw, paymentsRaw, trainingRaw, statsRaw, participantsRaw, actionsRaw, documentsRaw, auditRaw,
-      ] = await Promise.all([
+      const [clientsRaw, contactsRaw, programmesRaw, opportunitiesRaw, quotationsRaw, poRaw, invoicesRaw, paymentsRaw,
+        trainingRaw, statsRaw, participantsRaw, actionsRaw, documentsRaw, auditRaw] = await Promise.all([
         fullList('clients', { expand: 'createdBy' }),
         fullList('client_contacts', { expand: 'client' }),
         fullList('programmes', { expand: 'client,quotation,po,opportunity' }),
@@ -191,14 +191,12 @@ export function PmsDataProvider({ children }) {
         fullList('audit_history', { expand: 'programme' }),
       ]);
       setState({
-        loading: false, error: '',
-        clients: clientsRaw.map(mapClient), clientContacts: contactsRaw,
+        loading: false, error: '', clients: clientsRaw.map(mapClient), clientContacts: contactsRaw,
         programmes: programmesRaw.map(mapProgramme), opportunities: opportunitiesRaw.map(mapOpportunity),
-        quotations: quotationsRaw.map(mapQuotation), purchaseOrders: poRaw.map(mapPO),
-        invoices: invoicesRaw.map(mapInvoice), payments: paymentsRaw.map(mapPayment),
-        trainingSessions: trainingRaw.map(mapTraining), trainingStatistics: statsRaw.map(mapTrainingStat),
-        participants: participantsRaw.map(mapParticipant), actionItems: actionsRaw.map(mapAction),
-        documents: documentsRaw.map(mapDocument), auditHistory: auditRaw.map(mapAudit), notifications: [],
+        quotations: quotationsRaw.map(mapQuotation), purchaseOrders: poRaw.map(mapPO), invoices: invoicesRaw.map(mapInvoice),
+        payments: paymentsRaw.map(mapPayment), trainingSessions: trainingRaw.map(mapTraining), trainingStatistics: statsRaw.map(mapTrainingStat),
+        participants: participantsRaw.map(mapParticipant), actionItems: actionsRaw.map(mapAction), documents: documentsRaw.map(mapDocument),
+        auditHistory: auditRaw.map(mapAudit), notifications: [],
       });
     } catch (error) {
       console.error(error);
@@ -228,19 +226,15 @@ export function PmsDataProvider({ children }) {
   }, [refresh]);
 
   const derived = useMemo(() => {
-    const { opportunities, programmes, invoices, payments } = state;
+    const { opportunities, programmes, invoices } = state;
     const openOpportunities = opportunities.filter((o) => o.stage !== 'Lost/No-go');
     const pipelineValue = openOpportunities.reduce((s, o) => s + o.value, 0);
     const weightedPipelineValue = openOpportunities.reduce((s, o) => s + o.weighted, 0);
     const securedOrderBook = opportunities.reduce((s, o) => s + Number(o.securedOrderBookValue || 0), 0);
     const funnelStages = [
-      ['Contract signed/PO issued', '#10b981', 100],
-      ['Verbal commitment', '#3b82f6', 90],
-      ['Negotiation stage', '#8b5cf6', 70],
-      ['Proposal/Tender submitted', '#f59e0b', 50],
-      ['Qualified lead/Tender in progress', '#64748b', 30],
-      ['Early engagement', '#94a3b8', 10],
-      ['Lost/No-go', '#ef4444', 0],
+      ['Contract signed/PO issued', '#10b981', 100], ['Verbal commitment', '#3b82f6', 90], ['Negotiation stage', '#8b5cf6', 70],
+      ['Proposal/Tender submitted', '#f59e0b', 50], ['Qualified lead/Tender in progress', '#64748b', 30],
+      ['Early engagement', '#94a3b8', 10], ['Lost/No-go', '#ef4444', 0],
     ];
     const funnelByStage = funnelStages.map(([stage, color, probability]) => ({
       stage, color, probability, count: opportunities.filter((o) => o.stage === stage).length,
@@ -249,15 +243,11 @@ export function PmsDataProvider({ children }) {
     }));
     const totals = makeTotals(invoices);
     const monthlyFinancials = makeMonthlyFinancials(invoices);
-    const programmeCompletenessAvg = programmes.length
-      ? Math.round(programmes.reduce((s, p) => s + Number(p.progress || 0), 0) / programmes.length) : 0;
+    const programmeCompletenessAvg = programmes.length ? Math.round(programmes.reduce((s, p) => s + Number(p.progress || 0), 0) / programmes.length) : 0;
     return {
-      openOpportunities, pipelineValue, weightedPipelineValue, securedOrderBook,
-      funnelByStage, totals, monthlyFinancials, programmeCompletenessAvg,
-      BUSINESS_FLOW: [
-        'Opportunity', 'Quotation', 'Purchase Order', 'Programme',
-        'Training Delivery', 'Invoice', 'Payment Collection',
-      ],
+      openOpportunities, pipelineValue, weightedPipelineValue, securedOrderBook, funnelByStage, totals, monthlyFinancials,
+      programmeCompletenessAvg,
+      BUSINESS_FLOW: ['Opportunity', 'Quotation', 'Purchase Order', 'Programme', 'Training Delivery', 'Invoice', 'Payment Collection'],
     };
   }, [state]);
 
