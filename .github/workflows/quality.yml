@@ -60,13 +60,7 @@ jobs:
           fi
       - name: Verify critical business identifiers have unique database constraints
         run: |
-          required=(
-            idx_programmes_code_unique
-            idx_quotations_quote_no_unique
-            idx_purchase_orders_po_no_unique
-            idx_invoices_invoice_no_unique
-            idx_payments_payment_no_unique
-          )
+          required=(idx_programmes_code_unique idx_quotations_quote_no_unique idx_purchase_orders_po_no_unique idx_invoices_invoice_no_unique idx_payments_payment_no_unique)
           for index_name in "${required[@]}"; do
             if ! grep -RlF "${index_name}" apps/pocketbase/pb_migrations >/dev/null; then
               echo "Missing unique business identifier declaration: ${index_name}"
@@ -115,6 +109,7 @@ jobs:
       - name: Validate NGINX reverse-proxy configuration
         run: |
           mkdir -p /tmp/mimos-nginx/logs /tmp/mimos-nginx/run
+          sed 's/listen 80;/listen 8080;/' nginx/mimos-pms-api.conf > /tmp/mimos-nginx/mimos-pms-api.conf
           cat > /tmp/mimos-nginx/nginx.conf <<'EOF'
           pid /tmp/mimos-nginx/run/nginx.pid;
           error_log /tmp/mimos-nginx/logs/error.log;
@@ -122,10 +117,9 @@ jobs:
           http {
             access_log /tmp/mimos-nginx/logs/access.log;
             include /etc/nginx/mime.types;
-            include /workspace/nginx/mimos-pms-api.conf;
+            include /tmp/mimos-nginx/mimos-pms-api.conf;
           }
           EOF
-          sed -i "s#/workspace#${GITHUB_WORKSPACE}#g" /tmp/mimos-nginx/nginx.conf
           nginx -t -c /tmp/mimos-nginx/nginx.conf
 
   pocketbase-smoke:
@@ -176,15 +170,11 @@ jobs:
           PB_PID=$!
           trap 'kill $PB_PID 2>/dev/null || true' EXIT
           for attempt in $(seq 1 30); do
-            if curl -fsS http://127.0.0.1:8090/api/health >/dev/null; then
-              break
-            fi
+            if curl -fsS http://127.0.0.1:8090/api/health >/dev/null; then break; fi
             sleep 1
           done
           curl -fsS http://127.0.0.1:8090/api/health >/dev/null
-          curl -fsS \
-            -X POST \
-            -H 'Content-Type: application/json' \
+          curl -fsS -X POST -H 'Content-Type: application/json' \
             -d '{"identity":"ci-admin@example.invalid","password":"CiTest-Password-2026-Strong!"}' \
             http://127.0.0.1:8090/api/collections/_superusers/auth-with-password >/dev/null
           bash ../../tools/role-matrix-smoke.sh
