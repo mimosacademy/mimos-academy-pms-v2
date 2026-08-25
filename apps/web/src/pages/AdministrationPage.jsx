@@ -6,7 +6,6 @@ import PageHeader from '@/components/PageHeader';
 import EntityDialog from '@/components/EntityDialog';
 import StatCard from '@/components/StatCard';
 import StatusBadge from '@/components/StatusBadge';
-import { Button } from '@/components/ui/button';
 import { NAV_SECTIONS, ROLES } from '@/lib/roles';
 import { Check, Minus, Settings, ShieldCheck, UserCog, Users } from 'lucide-react';
 
