@@ -1,34 +1,70 @@
 #!/usr/bin/env bash
 set -euo pipefail
+
 BASE_URL="${PB_BASE_URL:-http://127.0.0.1:8090}"
 ADMIN_EMAIL="${PB_BOOTSTRAP_USER_EMAIL:-ci-superadmin@example.com}"
 ADMIN_PASSWORD="${PB_BOOTSTRAP_USER_PASSWORD:-CiApp-Password-2026-Strong!}"
+ROLE_PASSWORD='CiRole-Password-2026-Strong!'
 TMP_DIR="${TMPDIR:-/tmp}/mimos-role-smoke"
 mkdir -p "$TMP_DIR"
 trap 'rm -rf "$TMP_DIR"' EXIT
-api(){ curl -sS -w '\n%{http_code}' "$@"; }
-status(){ printf '%s' "$1" | tail -n1; }
-body(){ printf '%s' "$1" | sed '$d'; }
-expect(){ local e="$1"; shift; local r s; r="$(api "$@"); s="$(status "$r")"; [[ "$s" == "$e" ]] || { echo "Expected HTTP $e, got $s: $*"; printf '%s\n' "$(body "$r")"; return 1; }; }
-login(){
-  local collection="$1" identity="$2" password="$3" response code payload
-  response="$(api -X POST -H 'Content-Type: application/json' -d "{\"identity\":\"$identity\",\"password\":\"$password\"}" "$BASE_URL/api/collections/$collection/auth-with-password")"
+
+api() { curl -sS -w '\n%{http_code}' "$@"; }
+status() { printf '%s' "$1" | tail -n1; }
+body() { printf '%s' "$1" | sed '$d'; }
+
+expect_status() {
+  local expected="$1"
+  shift
+  local response code
+  response="$(api "$@")"
+  code="$(status "$response")"
+  if [[ "$code" != "$expected" ]]; then
+    echo "Expected HTTP $expected, got $code: $*"
+    body "$response"
+    return 1
+  fi
+}
+
+login() {
+  local collection="$1"
+  local identity="$2"
+  local password="$3"
+  local response code payload
+
+  response="$(api -X POST -H 'Content-Type: application/json' \
+    -d "{\"identity\":\"$identity\",\"password\":\"$password\"}" \
+    "$BASE_URL/api/collections/$collection/auth-with-password")"
   code="$(status "$response")"
   payload="$(body "$response")"
-  if [[ "$code" != 200 ]]; then
+
+  if [[ "$code" != "200" ]]; then
     echo "Authentication failed: collection=$collection identity=$identity HTTP=$code" >&2
     printf '%s\n' "$payload" >&2
     return 1
   fi
-  printf '%s' "$payload" | python3 -c 'import json,sys; data=json.load(sys.stdin); token=data.get("token");
+
+  python3 -c 'import json,sys
+payload=json.load(sys.stdin)
+token=payload.get("token")
 if not token:
-    raise SystemExit("Authentication response did not contain token: "+json.dumps(data))
+    raise SystemExit("Authentication response did not contain token")
 print(token)'
 }
-create(){
-  local token="$1" collection="$2" payload="$3" response code
-  response="$(api -X POST -H "Authorization: $token" -H 'Content-Type: application/json' -d "$payload" "$BASE_URL/api/collections/$collection/records")"
+
+create_record() {
+  local token="$1"
+  local collection="$2"
+  local payload="$3"
+  local response code
+
+  response="$(api -X POST \
+    -H "Authorization: $token" \
+    -H 'Content-Type: application/json' \
+    -d "$payload" \
+    "$BASE_URL/api/collections/$collection/records")"
   code="$(status "$response")"
+
   if [[ "$code" != 2* ]]; then
     echo "Create failed: collection=$collection HTTP=$code"
     body "$response"
@@ -36,40 +72,175 @@ create(){
   fi
   body "$response"
 }
+
+record_id() {
+  python3 -c 'import json,sys
+print(json.load(sys.stdin)["id"])'
+}
+
 ADMIN_TOKEN="$(login users "$ADMIN_EMAIL" "$ADMIN_PASSWORD")"
 roles=(manager finance sales programme_pic trainer viewer)
+
 for role in "${roles[@]}"; do
-  email="ci-${role}@example.com"; pw='CiRole-Password-2026-Strong!'
-  response="$(api -X POST -H "Authorization: $ADMIN_TOKEN" -H 'Content-Type: application/json' -d "{\"email\":\"$email\",\"password\":\"$pw\",\"passwordConfirm\":\"$pw\",\"name\":\"CI ${role}\",\"role\":\"$role\",\"verified\":true}" "$BASE_URL/api/collections/users/records")"
+  email="ci-${role}@example.com"
+  payload="$(python3 - "$email" "$ROLE_PASSWORD" "$role" <<'PY'
+import json,sys
+email,password,role=sys.argv[1:]
+print(json.dumps({
+  "email": email,
+  "password": password,
+  "passwordConfirm": password,
+  "name": f"CI {role}",
+  "role": role,
+  "verified": True,
+}))
+PY
+)"
+  response="$(api -X POST -H "Authorization: $ADMIN_TOKEN" -H 'Content-Type: application/json' \
+    -d "$payload" "$BASE_URL/api/collections/users/records")"
   code="$(status "$response")"
-  if [[ "$code" != 2* ]]; then echo "Failed to provision role $role HTTP=$code"; body "$response"; exit 1; fi
+  if [[ "$code" != 2* ]]; then
+    echo "Failed to provision role $role HTTP=$code"
+    body "$response"
+    exit 1
+  fi
   body "$response" > "$TMP_DIR/$role.json"
 done
-role_id(){ python3 - "$TMP_DIR/$1.json" <<'PY'
-import json,sys
-print(json.load(open(sys.argv[1]))['id'])
-PY
+
+role_id() {
+  record_id < "$TMP_DIR/$1.json"
 }
-login_role(){ login users "ci-$1@example.com" 'CiRole-Password-2026-Strong!'; }
+
+login_role() {
+  login users "ci-$1@example.com" "$ROLE_PASSWORD"
+}
+
 for role in "${roles[@]}"; do
-  token="$(login_role "$role")"; id="$(role_id "$role")"; r="$(api -H "Authorization: $token" "$BASE_URL/api/collections/users/records/$id")"
-  [[ "$(status "$r")" == 200 ]] || { echo "Role view failed: $role"; body "$r"; exit 1; }
-  actual="$(body "$r" | python3 -c 'import json,sys; print(json.load(sys.stdin).get("role",""))')"
-  [[ "$actual" == "$role" ]] || { echo "Role mismatch: $role != $actual"; exit 1; }
+  token="$(login_role "$role")"
+  id="$(role_id "$role")"
+  response="$(api -H "Authorization: $token" "$BASE_URL/api/collections/users/records/$id")"
+  if [[ "$(status "$response")" != "200" ]]; then
+    echo "Role view failed: $role"
+    body "$response"
+    exit 1
+  fi
+  actual="$(body "$response" | python3 -c 'import json,sys; print(json.load(sys.stdin).get("role",""))')"
+  if [[ "$actual" != "$role" ]]; then
+    echo "Role mismatch: expected=$role actual=$actual"
+    exit 1
+  fi
 done
-manager="$(login_role manager)"; viewer="$(login_role viewer)"; sales="$(login_role sales)"; finance="$(login_role finance)"; trainer="$(login_role trainer)"
-expect 200 -H "Authorization: $manager" "$BASE_URL/api/collections/users/records?perPage=1"
-r="$(api -H "Authorization: $viewer" "$BASE_URL/api/collections/users/records?perPage=1")"; [[ "$(status "$r")" == 200 ]] || { echo 'Viewer list request failed'; body "$r"; exit 1; }
-[[ "$(body "$r" | python3 -c 'import json,sys; print(json.load(sys.stdin).get("totalItems",-1))')" == 0 ]] || { echo 'Viewer unexpectedly received user records'; body "$r"; exit 1; }
-SALES_ID="$(role_id sales)"; MANAGER_ID="$(role_id manager)"; FINANCE_ID="$(role_id finance)"
-expect 200 -X POST -H "Authorization: $sales" -H 'Content-Type: application/json' -d "{\"name\":\"CI Sales Client\",\"status\":\"Active\",\"createdBy\":\"$SALES_ID\"}" "$BASE_URL/api/collections/clients/records"
-expect 400 -X POST -H "Authorization: $viewer" -H 'Content-Type: application/json' -d "{\"name\":\"CI Viewer Denied\",\"status\":\"Active\",\"createdBy\":\"$SALES_ID\"}" "$BASE_URL/api/collections/clients/records"
-CJSON="$(create "$manager" clients "{\"name\":\"CI Financial Client\",\"status\":\"Active\",\"createdBy\":\"$MANAGER_ID\"}")"; CID="$(printf '%s' "$CJSON"|python3 -c 'import json,sys;print(json.load(sys.stdin)["id"])')"
-PJSON="$(create "$manager" programmes "{\"client\":\"$CID\",\"code\":\"CI-FIN-001\",\"title\":\"CI Financial Programme\",\"status\":\"Scheduled\",\"contractValue\":1000,\"createdBy\":\"$MANAGER_ID\"}")"; PID="$(printf '%s' "$PJSON"|python3 -c 'import json,sys;print(json.load(sys.stdin)["id"])')"
-expect 200 -X POST -H "Authorization: $trainer" -H 'Content-Type: application/json' -d "{\"programme\":\"$PID\",\"title\":\"CI Trainer Session\",\"status\":\"Scheduled\",\"createdBy\":\"$MANAGER_ID\"}" "$BASE_URL/api/collections/training_delivery/records"
-expect 400 -X POST -H "Authorization: $viewer" -H 'Content-Type: application/json' -d "{\"programme\":\"$PID\",\"title\":\"CI Viewer Session\",\"status\":\"Scheduled\",\"createdBy\":\"$MANAGER_ID\"}" "$BASE_URL/api/collections/training_delivery/records"
-IJSON="$(create "$finance" invoices "{\"programme\":\"$PID\",\"client\":\"$CID\",\"invoiceNo\":\"CI-INV-001\",\"description\":\"CI integrity\",\"amount\":1000,\"paidAmount\":0,\"status\":\"Unpaid\",\"createdBy\":\"$FINANCE_ID\"}")"; IID="$(printf '%s' "$IJSON"|python3 -c 'import json,sys;print(json.load(sys.stdin)["id"])')"
-create "$finance" payments "{\"invoice\":\"$IID\",\"programme\":\"$PID\",\"client\":\"$CID\",\"paymentNo\":\"CI-PAY-001\",\"amount\":600,\"method\":\"Bank Transfer\",\"status\":\"Completed\",\"createdBy\":\"$FINANCE_ID\"}" >/dev/null
-expect 400 -X POST -H "Authorization: $finance" -H 'Content-Type: application/json' -d "{\"invoice\":\"$IID\",\"programme\":\"$PID\",\"client\":\"$CID\",\"paymentNo\":\"CI-PAY-002\",\"amount\":401,\"method\":\"Bank Transfer\",\"status\":\"Completed\",\"createdBy\":\"$FINANCE_ID\"}" "$BASE_URL/api/collections/payments/records"
-expect 400 -X PATCH -H "Authorization: $finance" -H 'Content-Type: application/json' -d '{"amount":500}' "$BASE_URL/api/collections/invoices/records/$IID"
+
+manager="$(login_role manager)"
+viewer="$(login_role viewer)"
+sales="$(login_role sales)"
+finance="$(login_role finance)"
+trainer="$(login_role trainer)"
+
+expect_status 200 -H "Authorization: $manager" "$BASE_URL/api/collections/users/records?perPage=1"
+
+viewer_response="$(api -H "Authorization: $viewer" "$BASE_URL/api/collections/users/records?perPage=1")"
+if [[ "$(status "$viewer_response")" != "200" ]]; then
+  echo 'Viewer list request failed'
+  body "$viewer_response"
+  exit 1
+fi
+viewer_total="$(body "$viewer_response" | python3 -c 'import json,sys; print(json.load(sys.stdin).get("totalItems",-1))')"
+if [[ "$viewer_total" != "0" ]]; then
+  echo 'Viewer unexpectedly received user records'
+  body "$viewer_response"
+  exit 1
+fi
+
+SALES_ID="$(role_id sales)"
+MANAGER_ID="$(role_id manager)"
+FINANCE_ID="$(role_id finance)"
+
+sales_client_payload='{"name":"CI Sales Client","status":"Active"}'
+expect_status 200 -X POST -H "Authorization: $sales" -H 'Content-Type: application/json' \
+  -d "$sales_client_payload" "$BASE_URL/api/collections/clients/records"
+
+expect_status 400 -X POST -H "Authorization: $viewer" -H 'Content-Type: application/json' \
+  -d '{"name":"CI Viewer Denied","status":"Active"}' "$BASE_URL/api/collections/clients/records"
+
+client_json="$(create_record "$manager" clients '{"name":"CI Financial Client","status":"Active"}')"
+CID="$(printf '%s' "$client_json" | record_id)"
+
+programme_json="$(create_record "$manager" programmes "$(python3 - "$CID" <<'PY'
+import json,sys
+print(json.dumps({
+  "client": sys.argv[1],
+  "code": "CI-FIN-001",
+  "title": "CI Financial Programme",
+  "status": "Scheduled",
+  "contractValue": 1000,
+}))
+PY
+)")"
+PID="$(printf '%s' "$programme_json" | record_id)"
+
+expect_status 200 -X POST -H "Authorization: $trainer" -H 'Content-Type: application/json' \
+  -d "$(python3 - "$PID" <<'PY'
+import json,sys
+print(json.dumps({"programme":sys.argv[1],"title":"CI Trainer Session","status":"Scheduled"}))
+PY
+)" "$BASE_URL/api/collections/training_delivery/records"
+
+expect_status 400 -X POST -H "Authorization: $viewer" -H 'Content-Type: application/json' \
+  -d "$(python3 - "$PID" <<'PY'
+import json,sys
+print(json.dumps({"programme":sys.argv[1],"title":"CI Viewer Session","status":"Scheduled"}))
+PY
+)" "$BASE_URL/api/collections/training_delivery/records"
+
+invoice_json="$(create_record "$finance" invoices "$(python3 - "$PID" "$CID" <<'PY'
+import json,sys
+programme,client=sys.argv[1:]
+print(json.dumps({
+  "programme": programme,
+  "client": client,
+  "invoiceNo": "CI-INV-001",
+  "description": "CI integrity",
+  "amount": 1000,
+  "paidAmount": 0,
+  "status": "Unpaid",
+}))
+PY
+)")"
+IID="$(printf '%s' "$invoice_json" | record_id)"
+
+create_record "$finance" payments "$(python3 - "$IID" "$PID" "$CID" <<'PY'
+import json,sys
+invoice,programme,client=sys.argv[1:]
+print(json.dumps({
+  "invoice": invoice,
+  "programme": programme,
+  "client": client,
+  "paymentNo": "CI-PAY-001",
+  "amount": 600,
+  "method": "Bank Transfer",
+  "status": "Completed",
+}))
+PY
+)" >/dev/null
+
+expect_status 400 -X POST -H "Authorization: $finance" -H 'Content-Type: application/json' \
+  -d "$(python3 - "$IID" "$PID" "$CID" <<'PY'
+import json,sys
+invoice,programme,client=sys.argv[1:]
+print(json.dumps({
+  "invoice": invoice,
+  "programme": programme,
+  "client": client,
+  "paymentNo": "CI-PAY-002",
+  "amount": 401,
+  "method": "Bank Transfer",
+  "status": "Completed",
+}))
+PY
+)" "$BASE_URL/api/collections/payments/records"
+
+expect_status 400 -X PATCH -H "Authorization: $finance" -H 'Content-Type: application/json' \
+  -d '{"amount":500}' "$BASE_URL/api/collections/invoices/records/$IID"
+
 echo 'Role provisioning, authorization and financial integrity E2E smoke tests passed.'
