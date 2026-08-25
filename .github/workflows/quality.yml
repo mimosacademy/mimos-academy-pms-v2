@@ -60,19 +60,26 @@ jobs:
           fi
       - name: Verify critical business identifiers have unique database constraints
         run: |
-          required=(
-            "idx_programmes_code_unique"
-            "idx_quotations_quote_no_unique"
-            "idx_purchase_orders_po_no_unique"
-            "idx_invoices_invoice_no_unique"
-            "idx_payments_payment_no_unique"
+          declare -A required_fields=(
+            [idx_programmes_code_unique]=code
+            [idx_quotations_quote_no_unique]=quoteNo
+            [idx_purchase_orders_po_no_unique]=poNo
+            [idx_invoices_invoice_no_unique]=invoiceNo
+            [idx_payments_payment_no_unique]=paymentNo
           )
-          for index_name in "${required[@]}"; do
-            if ! grep -R "CREATE UNIQUE INDEX ${index_name}" apps/pocketbase/pb_migrations >/dev/null; then
-              echo "Missing unique business identifier constraint: ${index_name}"
+          migration_file="apps/pocketbase/pb_migrations/1787660000_add_business_identifier_uniques.js"
+          test -f "$migration_file" || { echo "Business identifier uniqueness migration missing: $migration_file"; exit 1; }
+          for index_name in "${!required_fields[@]}"; do
+            if ! grep -Fq "\"${index_name}\"" "$migration_file"; then
+              echo "Missing unique business identifier declaration: ${index_name}"
               exit 1
             fi
           done
+          if ! grep -Fq 'CREATE UNIQUE INDEX ${indexName}' "$migration_file"; then
+            echo "Business identifier migration does not create UNIQUE indexes through the migration template."
+            exit 1
+          fi
+          echo "All critical business identifier unique indexes are declared in the canonical migration."
       - name: Validate V1 migration PHP syntax
         run: php -l tools/migrate-v1-to-v2.php
       - name: Verify V1 opportunity stages are mapped to V2 schema
