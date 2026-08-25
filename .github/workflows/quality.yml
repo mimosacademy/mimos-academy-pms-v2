@@ -99,6 +99,8 @@ jobs:
           PB_ENCRYPTION_KEY: 0123456789abcdef0123456789abcdef
           PB_SUPERUSER_EMAIL: ci-admin@example.com
           PB_SUPERUSER_PASSWORD: CiTest-Password-2026-Strong!
+          PB_BOOTSTRAP_USER_EMAIL: ci-superadmin@example.com
+          PB_BOOTSTRAP_USER_PASSWORD: CiApp-Password-2026-Strong!
           PB_PUBLIC_URL: http://127.0.0.1:8090
         run: |
           rm -rf /tmp/mimos-pb-smoke
@@ -111,6 +113,8 @@ jobs:
           PB_ENCRYPTION_KEY: 0123456789abcdef0123456789abcdef
           PB_SUPERUSER_EMAIL: ci-admin@example.com
           PB_SUPERUSER_PASSWORD: CiTest-Password-2026-Strong!
+          PB_BOOTSTRAP_USER_EMAIL: ci-superadmin@example.com
+          PB_BOOTSTRAP_USER_PASSWORD: CiApp-Password-2026-Strong!
           PB_PUBLIC_URL: http://127.0.0.1:8090
           PB_BASE_URL: http://127.0.0.1:8090
         run: |
@@ -132,9 +136,7 @@ jobs:
           done
           if [ "$ready" != true ]; then
             echo "PocketBase did not return HTTP 200 from /api/health."
-            echo "HTTP response:"
             cat /tmp/mimos-health.json || true
-            echo "PocketBase log:"
             cat /tmp/mimos-pocketbase.log
             exit 1
           fi
