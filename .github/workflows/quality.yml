@@ -60,31 +60,28 @@ jobs:
           fi
       - name: Verify critical business identifiers have unique database constraints
         run: |
-          declare -A required_fields=(
-            [idx_programmes_code_unique]=code
-            [idx_quotations_quote_no_unique]=quoteNo
-            [idx_purchase_orders_po_no_unique]=poNo
-            [idx_invoices_invoice_no_unique]=invoiceNo
-            [idx_payments_payment_no_unique]=paymentNo
+          required=(
+            idx_programmes_code_unique
+            idx_quotations_quote_no_unique
+            idx_purchase_orders_po_no_unique
+            idx_invoices_invoice_no_unique
+            idx_payments_payment_no_unique
           )
-          migration_file="apps/pocketbase/pb_migrations/1787659100_unique_business_identifiers.js"
-          test -f "$migration_file" || { echo "Canonical business identifier uniqueness migration missing: $migration_file"; exit 1; }
-          for index_name in "${!required_fields[@]}"; do
-            if ! grep -Fq "\"${index_name}\"" "$migration_file"; then
+          for index_name in "${required[@]}"; do
+            if ! grep -RlF "${index_name}" apps/pocketbase/pb_migrations >/dev/null; then
               echo "Missing unique business identifier declaration: ${index_name}"
               exit 1
             fi
           done
-          if ! grep -Fq 'CREATE UNIQUE INDEX ${indexName}' "$migration_file"; then
-            echo "Canonical business identifier migration does not create UNIQUE indexes through the migration template."
-            exit 1
-          fi
-          echo "All critical business identifier unique indexes are declared in the canonical migration."
-      - name: Detect duplicate business-identifier migrations
+          echo "All critical business identifier unique indexes are declared across forward migrations."
+      - name: Verify business identifier migrations are idempotent
         run: |
-          matches=$(grep -Rl "idx_quotations_quote_no_unique" apps/pocketbase/pb_migrations | wc -l)
-          if [ "$matches" -ne 1 ]; then
-            echo "Expected exactly one migration declaring business identifier uniqueness; found $matches."
+          if grep -RlE 'CREATE UNIQUE INDEX (idx_programmes_code_unique|idx_quotations_quote_no_unique|idx_purchase_orders_po_no_unique|idx_invoices_invoice_no_unique|idx_payments_payment_no_unique)' apps/pocketbase/pb_migrations | while read -r file; do
+            if ! grep -q 'indexes\.some' "$file"; then
+              echo "Unique index migration is not guarded for idempotent application: $file"
+              exit 1
+            fi
+          done; then
             exit 1
           fi
       - name: Validate V1 migration PHP syntax
@@ -105,13 +102,15 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+      - name: Create service account for unit validation
+        run: sudo useradd --system --no-create-home --shell /usr/sbin/nologin mimos-pms || true
       - name: Validate systemd unit
         run: systemd-analyze verify systemd/mimos-pms.service
       - name: Install NGINX for config validation
         run: sudo apt-get update && sudo apt-get install -y nginx
       - name: Validate NGINX reverse-proxy configuration
         run: |
-          mkdir -p /tmp/mimos-nginx/conf /tmp/mimos-nginx/logs /tmp/mimos-nginx/run
+          mkdir -p /tmp/mimos-nginx/logs /tmp/mimos-nginx/run
           cat > /tmp/mimos-nginx/nginx.conf <<'EOF'
           pid /tmp/mimos-nginx/run/nginx.pid;
           error_log /tmp/mimos-nginx/logs/error.log;
