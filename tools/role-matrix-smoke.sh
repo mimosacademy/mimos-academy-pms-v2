@@ -11,7 +11,17 @@ status(){ printf '%s' "$1" | tail -n1; }
 body(){ printf '%s' "$1" | sed '$d'; }
 expect(){ local e="$1"; shift; local r s; r="$(api "$@")"; s="$(status "$r")"; [[ "$s" == "$e" ]] || { echo "Expected HTTP $e, got $s: $*"; printf '%s\n' "$r"; return 1; }; }
 login(){ api -X POST -H 'Content-Type: application/json' -d "{\"identity\":\"$2\",\"password\":\"$3\"}" "$BASE_URL/api/collections/$1/auth-with-password" | sed '$d' | python3 -c 'import json,sys; print(json.load(sys.stdin)["token"])'; }
-create(){ curl -fsS -X POST -H "Authorization: $1" -H 'Content-Type: application/json' -d "$3" "$BASE_URL/api/collections/$2/records"; }
+create(){
+  local token="$1" collection="$2" payload="$3" response code
+  response="$(api -X POST -H "Authorization: $token" -H 'Content-Type: application/json' -d "$payload" "$BASE_URL/api/collections/$collection/records")"
+  code="$(status "$response")"
+  if [[ "$code" != 2* ]]; then
+    echo "Create failed: collection=$collection HTTP=$code"
+    body "$response"
+    return 1
+  fi
+  body "$response"
+}
 ADMIN_TOKEN="$(login users "$ADMIN_EMAIL" "$ADMIN_PASSWORD")"
 roles=(manager finance sales programme_pic trainer viewer)
 for role in "${roles[@]}"; do
