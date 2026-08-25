@@ -100,6 +100,30 @@ jobs:
       - name: Validate role-matrix smoke script syntax
         run: bash -n tools/role-matrix-smoke.sh
 
+  deployment-config-check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Validate systemd unit
+        run: systemd-analyze verify systemd/mimos-pms.service
+      - name: Install NGINX for config validation
+        run: sudo apt-get update && sudo apt-get install -y nginx
+      - name: Validate NGINX reverse-proxy configuration
+        run: |
+          mkdir -p /tmp/mimos-nginx/conf /tmp/mimos-nginx/logs /tmp/mimos-nginx/run
+          cat > /tmp/mimos-nginx/nginx.conf <<'EOF'
+          pid /tmp/mimos-nginx/run/nginx.pid;
+          error_log /tmp/mimos-nginx/logs/error.log;
+          events {}
+          http {
+            include /etc/nginx/mime.types;
+            include /workspace/nginx/mimos-pms-api.conf;
+          }
+          EOF
+          sed -i "s#/workspace#${GITHUB_WORKSPACE}#g" /tmp/mimos-nginx/nginx.conf
+          nginx -t -c /tmp/mimos-nginx/nginx.conf
+
   pocketbase-smoke:
     runs-on: ubuntu-latest
     needs: migration-static-check
