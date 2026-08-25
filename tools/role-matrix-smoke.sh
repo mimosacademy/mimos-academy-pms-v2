@@ -66,6 +66,21 @@ with open(sys.argv[1]) as f: print(json.load(f)['id'])
 PY
 }
 
+assert_role() {
+  local role="$1" expected="$2" token id response status actual
+  token="$(login_role "$role")"
+  id="$(role_id "$role")"
+  response="$(api -H "Authorization: $token" "$BASE_URL/api/collections/users/records/$id")"
+  status="$(printf '%s' "$response" | tail -n 1)"
+  [[ "$status" == "200" ]] || { echo "Expected role self-view HTTP 200 for $role, got $status"; printf '%s\n' "$response"; return 1; }
+  actual="$(printf '%s' "$response" | sed '$d' | python3 -c 'import json,sys; print(json.load(sys.stdin).get("role",""))')"
+  [[ "$actual" == "$expected" ]] || { echo "Role provisioning mismatch for $role: expected $expected, got $actual"; return 1; }
+}
+
+for role in "${roles[@]}"; do
+  assert_role "$role" "$role"
+done
+
 # List rules are record filters: a denied list request returns HTTP 200 with zero records.
 token="$(login_role manager)"
 expect_status 200 -H "Authorization: $token" "$BASE_URL/api/collections/users/records?perPage=1"
