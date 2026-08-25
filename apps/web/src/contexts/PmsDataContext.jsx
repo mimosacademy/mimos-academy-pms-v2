@@ -142,7 +142,14 @@ const makeTotals = (invoices) => {
   const revenue = invoices.reduce((s, i) => s + Number(i.totalAmount || i.amount || 0), 0);
   const collected = invoices.reduce((s, i) => s + Number(i.collectionAmount || i.paidAmount || 0), 0);
   const outstanding = Math.max(revenue - collected, 0);
-  const overdue = invoices.filter((i) => i.status === 'Overdue' || (i.dueDate && new Date(i.dueDate) < new Date() && outstanding > 0)).reduce((s, i) => s + Math.max(Number(i.totalAmount || i.amount || 0) - Number(i.collectionAmount || i.paidAmount || 0), 0), 0);
+  const overdue = invoices.reduce((sum, i) => {
+    const total = Number(i.totalAmount || i.amount || 0);
+    const paid = Number(i.collectionAmount || i.paidAmount || 0);
+    const balance = Math.max(total - paid, 0);
+    const due = i.dueDate ? new Date(i.dueDate) : null;
+    const overdueInvoice = i.status === 'Overdue' || (due && !Number.isNaN(due.getTime()) && due < new Date());
+    return sum + (overdueInvoice ? balance : 0);
+  }, 0);
   return { revenue, collected, outstanding, overdue };
 };
 
