@@ -1,0 +1,48 @@
+name: V2 Quality Gate
+
+on:
+  push:
+    branches: [main, 'release/**']
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  web:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: apps/web
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+      - name: Install dependencies
+        run: npm install --no-audit --no-fund
+      - name: Lint
+        run: npm run lint
+      - name: Build
+        run: npm run build
+
+  migration-static-check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Verify migration field constructors
+        run: |
+          if grep -R "col\.fields\.add(new Field" apps/pocketbase/pb_migrations; then
+            echo "Untyped Field constructor found in migrations."
+            exit 1
+          fi
+      - name: Verify no production data directory is tracked
+        run: |
+          if git ls-files apps/pocketbase/pb_data | grep -q .; then
+            echo "pb_data must never be committed."
+            exit 1
+          fi
