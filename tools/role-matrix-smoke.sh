@@ -10,7 +10,18 @@ api(){ curl -sS -w '\n%{http_code}' "$@"; }
 status(){ printf '%s' "$1" | tail -n1; }
 body(){ printf '%s' "$1" | sed '$d'; }
 expect(){ local e="$1"; shift; local r s; r="$(api "$@")"; s="$(status "$r")"; [[ "$s" == "$e" ]] || { echo "Expected HTTP $e, got $s: $*"; printf '%s\n' "$r"; return 1; }; }
-login(){ api -X POST -H 'Content-Type: application/json' -d "{\"identity\":\"$2\",\"password\":\"$3\"}" "$BASE_URL/api/collections/$1/auth-with-password" | sed '$d' | python3 -c 'import json,sys; print(json.load(sys.stdin)["token"])'; }
+login(){
+  local collection="$1" identity="$2" password="$3" response code payload
+  response="$(api -X POST -H 'Content-Type: application/json' -d "{\"identity\":\"$identity\",\"password\":\"$password\"}" "$BASE_URL/api/collections/$collection/auth-with-password")"
+  code="$(status "$response")"
+  payload="$(body "$response")"
+  if [[ "$code" != 200 ]]; then
+    echo "Authentication failed: collection=$collection identity=$identity HTTP=$code" >&2
+    printf '%s\n' "$payload" >&2
+    return 1
+  fi
+  printf '%s' "$payload" | python3 -c 'import json,sys; data=json.load(sys.stdin); token=data.get("token"); raise SystemExit("Authentication response did not contain token: "+json.dumps(data)) if not token else print(token)'
+}
 create(){
   local token="$1" collection="$2" payload="$3" response code
   response="$(api -X POST -H "Authorization: $token" -H 'Content-Type: application/json' -d "$payload" "$BASE_URL/api/collections/$collection/records")"
@@ -26,9 +37,10 @@ ADMIN_TOKEN="$(login users "$ADMIN_EMAIL" "$ADMIN_PASSWORD")"
 roles=(manager finance sales programme_pic trainer viewer)
 for role in "${roles[@]}"; do
   email="ci-${role}@example.com"; pw='CiRole-Password-2026-Strong!'
-  if ! curl -sS -X POST -H "Authorization: $ADMIN_TOKEN" -H 'Content-Type: application/json' -d "{\"email\":\"$email\",\"password\":\"$pw\",\"passwordConfirm\":\"$pw\",\"name\":\"CI ${role}\",\"role\":\"$role\",\"verified\":true}" "$BASE_URL/api/collections/users/records" > "$TMP_DIR/$role.json"; then
-    echo "Failed to provision role $role"; cat "$TMP_DIR/$role.json"; exit 1
-  fi
+  response="$(api -X POST -H "Authorization: $ADMIN_TOKEN" -H 'Content-Type: application/json' -d "{\"email\":\"$email\",\"password\":\"$pw\",\"passwordConfirm\":\"$pw\",\"name\":\"CI ${role}\",\"role\":\"$role\",\"verified\":true}" "$BASE_URL/api/collections/users/records")"
+  code="$(status "$response")"
+  if [[ "$code" != 2* ]]; then echo "Failed to provision role $role HTTP=$code"; body "$response"; exit 1; fi
+  body "$response" > "$TMP_DIR/$role.json"
 done
 role_id(){ python3 - "$TMP_DIR/$1.json" <<'PY'
 import json,sys
@@ -38,7 +50,7 @@ PY
 login_role(){ login users "ci-$1@example.com" 'CiRole-Password-2026-Strong!'; }
 for role in "${roles[@]}"; do
   token="$(login_role "$role")"; id="$(role_id "$role")"; r="$(api -H "Authorization: $token" "$BASE_URL/api/collections/users/records/$id")"
-  [[ "$(status "$r")" == 200 ]] || exit 1
+  [[ "$(status "$r")" == 200 ]] || { echo "Role view failed: $role"; body "$r"; exit 1; }
   actual="$(body "$r" | python3 -c 'import json,sys; print(json.load(sys.stdin).get("role",""))')"
   [[ "$actual" == "$role" ]] || { echo "Role mismatch: $role != $actual"; exit 1; }
 done
