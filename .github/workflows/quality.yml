@@ -76,14 +76,14 @@ jobs:
           echo "All critical business identifier unique indexes are declared across forward migrations."
       - name: Verify business identifier migrations are idempotent
         run: |
-          if grep -RlE 'CREATE UNIQUE INDEX (idx_programmes_code_unique|idx_quotations_quote_no_unique|idx_purchase_orders_po_no_unique|idx_invoices_invoice_no_unique|idx_payments_payment_no_unique)' apps/pocketbase/pb_migrations | while read -r file; do
+          files=$(grep -RlE 'CREATE UNIQUE INDEX (idx_programmes_code_unique|idx_quotations_quote_no_unique|idx_purchase_orders_po_no_unique|idx_invoices_invoice_no_unique|idx_payments_payment_no_unique)' apps/pocketbase/pb_migrations || true)
+          for file in $files; do
             if ! grep -q 'indexes\.some' "$file"; then
               echo "Unique index migration is not guarded for idempotent application: $file"
               exit 1
             fi
-          done; then
-            exit 1
-          fi
+          done
+          echo "All unique-index migrations are guarded for idempotent application."
       - name: Validate V1 migration PHP syntax
         run: php -l tools/migrate-v1-to-v2.php
       - name: Verify V1 opportunity stages are mapped to V2 schema
@@ -104,6 +104,10 @@ jobs:
         uses: actions/checkout@v4
       - name: Create service account for unit validation
         run: sudo useradd --system --no-create-home --shell /usr/sbin/nologin mimos-pms || true
+      - name: Create executable placeholder for unit validation
+        run: |
+          sudo mkdir -p /var/www/mimos-pms/apps/pocketbase
+          sudo ln -sf /usr/bin/true /var/www/mimos-pms/apps/pocketbase/pocketbase
       - name: Validate systemd unit
         run: systemd-analyze verify systemd/mimos-pms.service
       - name: Install NGINX for config validation
