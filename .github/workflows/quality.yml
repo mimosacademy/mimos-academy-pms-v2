@@ -141,7 +141,7 @@ jobs:
         working-directory: apps/pocketbase
         env:
           PB_ENCRYPTION_KEY: 0123456789abcdef0123456789abcdef
-          PB_SUPERUSER_EMAIL: ci-admin@example.invalid
+          PB_SUPERUSER_EMAIL: ci-admin@example.com
           PB_SUPERUSER_PASSWORD: CiTest-Password-2026-Strong!
         run: |
           rm -rf /tmp/mimos-pb-smoke
@@ -157,10 +157,11 @@ jobs:
         working-directory: apps/pocketbase
         env:
           PB_ENCRYPTION_KEY: 0123456789abcdef0123456789abcdef
-          PB_SUPERUSER_EMAIL: ci-admin@example.invalid
+          PB_SUPERUSER_EMAIL: ci-admin@example.com
           PB_SUPERUSER_PASSWORD: CiTest-Password-2026-Strong!
           PB_BASE_URL: http://127.0.0.1:8090
         run: |
+          set -o pipefail
           ./pocketbase serve \
             --http=127.0.0.1:8090 \
             --encryptionEnv=PB_ENCRYPTION_KEY \
@@ -173,9 +174,21 @@ jobs:
             if curl -fsS http://127.0.0.1:8090/api/health >/dev/null; then break; fi
             sleep 1
           done
-          curl -fsS http://127.0.0.1:8090/api/health >/dev/null
-          curl -fsS -X POST -H 'Content-Type: application/json' \
-            -d '{"identity":"ci-admin@example.invalid","password":"CiTest-Password-2026-Strong!"}' \
-            http://127.0.0.1:8090/api/collections/_superusers/auth-with-password >/dev/null
+          if ! curl -fsS http://127.0.0.1:8090/api/health >/dev/null; then
+            echo "PocketBase failed health check. Server log:"
+            cat /tmp/mimos-pocketbase.log
+            exit 1
+          fi
+          auth_status=$(curl -sS -o /tmp/mimos-auth.json -w '%{http_code}' \
+            -X POST -H 'Content-Type: application/json' \
+            -d "{\"identity\":\"${PB_SUPERUSER_EMAIL}\",\"password\":\"${PB_SUPERUSER_PASSWORD}\"}" \
+            http://127.0.0.1:8090/api/collections/_superusers/auth-with-password)
+          if [ "$auth_status" != "200" ]; then
+            echo "PocketBase superuser authentication failed with HTTP $auth_status."
+            cat /tmp/mimos-auth.json
+            echo "Server log:"
+            cat /tmp/mimos-pocketbase.log
+            exit 1
+          fi
           bash ../../tools/role-matrix-smoke.sh
           echo "PocketBase health, authentication and seven-role authorization verified."
