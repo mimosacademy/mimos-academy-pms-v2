@@ -102,7 +102,7 @@ jobs:
         run: |
           rm -rf /tmp/mimos-pb-smoke
           mkdir -p /tmp/mimos-pb-smoke
-          ./pocketbase migrate up --encryptionEnv=PB_ENCRYPTION_KEY --dir=/tmp/mimos-pb-smoke --migrationsDir=./pb_migrations --hooksDir=./pb_hooks
+          ./pocketbase --encryptionEnv=PB_ENCRYPTION_KEY migrate up --dir=/tmp/mimos-pb-smoke --migrationsDir=./pb_migrations --hooksDir=./pb_hooks
           test -f /tmp/mimos-pb-smoke/data.db
       - name: Boot, bootstrap superuser, authenticate, and run E2E
         working-directory: apps/pocketbase
@@ -112,8 +112,8 @@ jobs:
           PB_SUPERUSER_PASSWORD: CiTest-Password-2026-Strong!
           PB_BASE_URL: http://127.0.0.1:8090
         run: |
-          ./pocketbase superuser upsert "$PB_SUPERUSER_EMAIL" "$PB_SUPERUSER_PASSWORD" --dir=/tmp/mimos-pb-smoke
-          ./pocketbase serve --http=127.0.0.1:8090 --encryptionEnv=PB_ENCRYPTION_KEY --dir=/tmp/mimos-pb-smoke --migrationsDir=./pb_migrations --hooksDir=./pb_hooks >/tmp/mimos-pocketbase.log 2>&1 &
+          ./pocketbase --encryptionEnv=PB_ENCRYPTION_KEY superuser upsert "$PB_SUPERUSER_EMAIL" "$PB_SUPERUSER_PASSWORD" --dir=/tmp/mimos-pb-smoke
+          ./pocketbase --encryptionEnv=PB_ENCRYPTION_KEY serve --http=127.0.0.1:8090 --dir=/tmp/mimos-pb-smoke --migrationsDir=./pb_migrations --hooksDir=./pb_hooks >/tmp/mimos-pocketbase.log 2>&1 &
           PB_PID=$!
           trap 'kill $PB_PID 2>/dev/null || true' EXIT
           for attempt in $(seq 1 30); do curl -fsS "$PB_BASE_URL/api/health" >/dev/null && break || sleep 1; done
