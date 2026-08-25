@@ -8,9 +8,7 @@ import StatCard from '@/components/StatCard';
 import StatusBadge from '@/components/StatusBadge';
 import { Button } from '@/components/ui/button';
 import { NAV_SECTIONS, ROLES } from '@/lib/roles';
-import { Check, Minus, Plus, Settings, ShieldCheck, UserCog, Users } from 'lucide-react';
-
-
+import { Check, Minus, Settings, ShieldCheck, UserCog, Users } from 'lucide-react';
 
 const ROLE_BADGE_TONES = {
   super_admin: 'bg-violet-600 text-white',
@@ -23,6 +21,13 @@ const ROLE_BADGE_TONES = {
 };
 
 const MODULES = NAV_SECTIONS.flatMap((s) => s.items.map((i) => ({ label: i.label, roles: i.roles })));
+
+const initialsFor = (user) => {
+  const source = (user.name || user.email || '').trim();
+  if (!source) return 'U';
+  const words = source.split(/\s+/).filter(Boolean);
+  return words.slice(0, 2).map((word) => word[0]).join('').toUpperCase();
+};
 
 export default function AdministrationPage() {
   const [staffUsers, setStaffUsers] = React.useState([]);
@@ -38,6 +43,7 @@ export default function AdministrationPage() {
   React.useEffect(() => { loadUsers(); }, [loadUsers]);
 
   const roleOptions = Object.entries(ROLES).map(([value, label]) => ({ value, label }));
+  const verifiedUsers = staffUsers.filter((user) => user.verified).length;
 
   return (
     <div>
@@ -57,7 +63,7 @@ export default function AdministrationPage() {
             { name: 'email', label: 'Email', type: 'email', required: true },
             { name: 'password', label: 'Temporary Password', type: 'password', required: true },
             { name: 'passwordConfirm', label: 'Confirm Password', type: 'password', required: true },
-            { name: 'role', label: 'Role', type: 'select', options: roleOptions, required: true }
+            { name: 'role', label: 'Role', type: 'select', options: roleOptions, required: true },
           ]}
           onCreated={loadUsers}
         />
@@ -67,11 +73,10 @@ export default function AdministrationPage() {
         <StatCard title="Staff Accounts" value={staffUsers.length} icon={Users} tone="violet" hint="provisioned users" />
         <StatCard title="Roles Defined" value={Object.keys(ROLES).length} icon={ShieldCheck} tone="blue" hint="access profiles" />
         <StatCard title="Modules" value={MODULES.length} icon={Settings} tone="amber" hint="in the navigation" />
-        <StatCard title="Active Sessions" value={staffUsers.length} icon={UserCog} tone="emerald" hint="provisioned accounts" />
+        <StatCard title="Verified Accounts" value={verifiedUsers} icon={UserCog} tone="emerald" hint="verified staff accounts" />
       </div>
 
       <div className="grid grid-cols-1 gap-6 xl:grid-cols-5">
-        {/* Users table */}
         <section className="overflow-hidden rounded-xl border bg-white shadow-sm xl:col-span-3">
           <header className="border-b px-5 py-4">
             <h2 className="text-sm font-semibold text-slate-900">User Accounts</h2>
@@ -89,11 +94,11 @@ export default function AdministrationPage() {
               </thead>
               <tbody className="divide-y">
                 {staffUsers.map((u) => (
-                  <tr key={u.email} className="hover:bg-violet-50/40">
+                  <tr key={u.id} className="hover:bg-violet-50/40">
                     <td className="px-5 py-3">
                       <div className="flex items-center gap-3">
                         <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-violet-50 text-xs font-bold text-violet-700">
-                          {u.name || u.email.split(' ').map((w) => w[0]).slice(0, 2).join('')}
+                          {initialsFor(u)}
                         </div>
                         <div>
                           <p className="font-medium text-slate-800">{u.name || u.email}</p>
@@ -102,8 +107,8 @@ export default function AdministrationPage() {
                       </div>
                     </td>
                     <td className="px-5 py-3">
-                      <span className={`inline-flex whitespace-nowrap rounded-full px-2.5 py-0.5 text-xs font-medium ${ROLE_BADGE_TONES[u.role || 'viewer']}`}>
-                        {ROLES[u.role || 'viewer']}
+                      <span className={`inline-flex whitespace-nowrap rounded-full px-2.5 py-0.5 text-xs font-medium ${ROLE_BADGE_TONES[u.role || 'viewer'] || ROLE_BADGE_TONES.viewer}`}>
+                        {ROLES[u.role || 'viewer'] || ROLES.viewer}
                       </span>
                     </td>
                     <td className="whitespace-nowrap px-5 py-3 text-slate-500">{u.lastLogin || '—'}</td>
@@ -115,7 +120,6 @@ export default function AdministrationPage() {
           </div>
         </section>
 
-        {/* Permission matrix */}
         <section className="overflow-hidden rounded-xl border bg-white shadow-sm xl:col-span-2">
           <header className="border-b px-5 py-4">
             <h2 className="text-sm font-semibold text-slate-900">Role Permission Matrix</h2>
