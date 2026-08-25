@@ -143,4 +143,7 @@ jobs:
           grep -q 'API is healthy' /tmp/mimos-health.json
           auth_status=$(curl -sS -o /tmp/mimos-auth.json -w '%{http_code}' -X POST -H 'Content-Type: application/json' -d "{\"identity\":\"$PB_SUPERUSER_EMAIL\",\"password\":\"$PB_SUPERUSER_PASSWORD\"}" "$PB_BASE_URL/api/collections/_superusers/auth-with-password")
           [ "$auth_status" = 200 ] || { echo "Superuser auth failed with HTTP $auth_status"; cat /tmp/mimos-auth.json; cat /tmp/mimos-pocketbase.log; exit 1; }
+          app_admin_status=$(curl -sS -o /tmp/mimos-app-admin-auth.json -w '%{http_code}' -X POST -H 'Content-Type: application/json' -d "{\"identity\":\"$PB_BOOTSTRAP_USER_EMAIL\",\"password\":\"$PB_BOOTSTRAP_USER_PASSWORD\"}" "$PB_BASE_URL/api/collections/users/auth-with-password")
+          [ "$app_admin_status" = 200 ] || { echo "Application Super Admin bootstrap failed with HTTP $app_admin_status"; cat /tmp/mimos-app-admin-auth.json; cat /tmp/mimos-pocketbase.log; exit 1; }
+          grep -q '"role":"super_admin"' /tmp/mimos-app-admin-auth.json || { echo "Bootstrap account is not super_admin"; cat /tmp/mimos-app-admin-auth.json; exit 1; }
           bash ../../tools/role-matrix-smoke.sh
