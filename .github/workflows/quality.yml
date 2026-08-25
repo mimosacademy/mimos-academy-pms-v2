@@ -67,8 +67,8 @@ jobs:
             [idx_invoices_invoice_no_unique]=invoiceNo
             [idx_payments_payment_no_unique]=paymentNo
           )
-          migration_file="apps/pocketbase/pb_migrations/1787660000_add_business_identifier_uniques.js"
-          test -f "$migration_file" || { echo "Business identifier uniqueness migration missing: $migration_file"; exit 1; }
+          migration_file="apps/pocketbase/pb_migrations/1787659100_unique_business_identifiers.js"
+          test -f "$migration_file" || { echo "Canonical business identifier uniqueness migration missing: $migration_file"; exit 1; }
           for index_name in "${!required_fields[@]}"; do
             if ! grep -Fq "\"${index_name}\"" "$migration_file"; then
               echo "Missing unique business identifier declaration: ${index_name}"
@@ -76,10 +76,17 @@ jobs:
             fi
           done
           if ! grep -Fq 'CREATE UNIQUE INDEX ${indexName}' "$migration_file"; then
-            echo "Business identifier migration does not create UNIQUE indexes through the migration template."
+            echo "Canonical business identifier migration does not create UNIQUE indexes through the migration template."
             exit 1
           fi
           echo "All critical business identifier unique indexes are declared in the canonical migration."
+      - name: Detect duplicate business-identifier migrations
+        run: |
+          matches=$(grep -Rl "idx_quotations_quote_no_unique" apps/pocketbase/pb_migrations | wc -l)
+          if [ "$matches" -ne 1 ]; then
+            echo "Expected exactly one migration declaring business identifier uniqueness; found $matches."
+            exit 1
+          fi
       - name: Validate V1 migration PHP syntax
         run: php -l tools/migrate-v1-to-v2.php
       - name: Verify V1 opportunity stages are mapped to V2 schema
