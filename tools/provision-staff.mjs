@@ -7,13 +7,13 @@
  *   PB_URL                  PocketBase URL, e.g. https://pms.example.com
  *   PB_ADMIN_EMAIL          PocketBase superuser email
  *   PB_ADMIN_PASSWORD       PocketBase superuser password
- *   PB_STAFF_SEED_JSON      JSON array of {name,email,password,role,team}
+ *   PB_STAFF_SEED_JSON      JSON array of {name,email,password?,role?,team}
  *
- * No production credentials are stored in Git. The caller supplies them through
- * an external secret manager / deployment environment.
- *
- * Existing users are updated for name/team/role but their password is changed
- * only when explicitly supplied in the seed object. The script is idempotent.
+ * Production credentials are intentionally not stored in Git.
+ * If role is omitted for a new user, one of the six non-admin roles is
+ * assigned randomly. Existing users keep their current role unless a role
+ * is explicitly supplied. This gives the initial deployment a temporary
+ * permission distribution that the Super Admin can correct later.
  */
 
 const required = ["PB_URL", "PB_ADMIN_EMAIL", "PB_ADMIN_PASSWORD", "PB_STAFF_SEED_JSON"];
@@ -30,6 +30,7 @@ const allowedRoles = new Set([
   "viewer",
   "super_admin",
 ]);
+const randomRoles = ["manager", "finance", "sales", "programme_pic", "trainer", "viewer"];
 
 const staff = JSON.parse(process.env.PB_STAFF_SEED_JSON);
 if (!Array.isArray(staff)) throw new Error("PB_STAFF_SEED_JSON must be a JSON array");
@@ -50,6 +51,10 @@ async function request(path, options = {}) {
   return body;
 }
 
+function randomRole() {
+  return randomRoles[Math.floor(Math.random() * randomRoles.length)];
+}
+
 const admin = await request("/api/collections/_superusers/auth-with-password", {
   method: "POST",
   body: JSON.stringify({ identity: process.env.PB_ADMIN_EMAIL, password: process.env.PB_ADMIN_PASSWORD }),
@@ -57,21 +62,21 @@ const admin = await request("/api/collections/_superusers/auth-with-password", {
 const auth = { Authorization: admin.token };
 
 for (const user of staff) {
-  if (!user?.name || !user?.email || !user?.role || !user?.team) {
-    throw new Error("Each staff record requires name, email, role and team");
-  }
-  if (!allowedRoles.has(user.role)) throw new Error(`Unsupported role for ${user.email}: ${user.role}`);
-  if (user.role === "super_admin" && user.team !== "MASB_Team") {
-    throw new Error(`Unexpected team for super_admin: ${user.email}`);
+  if (!user?.name || !user?.email || !user?.team) {
+    throw new Error("Each staff record requires name, email and team");
   }
 
   const encoded = encodeURIComponent(`email = '${String(user.email).replace(/'/g, "\\'")}'`);
   const existing = await request(`/api/collections/users/records?filter=${encoded}&perPage=1`, { headers: auth });
+  const existingUser = existing.items?.[0];
+  const role = user.role || existingUser?.role || randomRole();
+
+  if (!allowedRoles.has(role)) throw new Error(`Unsupported role for ${user.email}: ${role}`);
 
   const payload = {
     name: user.name,
     email: user.email,
-    role: user.role,
+    role,
     team: user.team,
   };
   if (user.password) {
@@ -79,14 +84,13 @@ for (const user of staff) {
     payload.passwordConfirm = user.password;
   }
 
-  if (existing.items?.length) {
-    const id = existing.items[0].id;
-    await request(`/api/collections/users/records/${id}`, {
+  if (existingUser) {
+    await request(`/api/collections/users/records/${existingUser.id}`, {
       method: "PATCH",
       headers: auth,
       body: JSON.stringify(payload),
     });
-    console.log(`updated ${user.email} (${user.role})`);
+    console.log(`updated ${user.email} (${role})`);
   } else {
     if (!user.password) throw new Error(`Password is required when creating ${user.email}`);
     await request("/api/collections/users/records", {
@@ -94,7 +98,7 @@ for (const user of staff) {
       headers: auth,
       body: JSON.stringify(payload),
     });
-    console.log(`created ${user.email} (${user.role})`);
+    console.log(`created ${user.email} (${role})`);
   }
 }
 
