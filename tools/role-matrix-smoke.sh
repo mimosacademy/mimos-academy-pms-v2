@@ -92,7 +92,6 @@ print(json.dumps({
   "passwordConfirm": password,
   "name": f"CI {role}",
   "role": role,
-  "verified": True,
 }))
 PY
 )"
@@ -151,10 +150,6 @@ if [[ "$viewer_total" != "0" ]]; then
   body "$viewer_response"
   exit 1
 fi
-
-SALES_ID="$(role_id sales)"
-MANAGER_ID="$(role_id manager)"
-FINANCE_ID="$(role_id finance)"
 
 sales_client_payload='{"name":"CI Sales Client","status":"Active"}'
 expect_status 200 -X POST -H "Authorization: $sales" -H 'Content-Type: application/json' \
