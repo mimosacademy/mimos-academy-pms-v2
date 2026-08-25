@@ -120,6 +120,7 @@ jobs:
           error_log /tmp/mimos-nginx/logs/error.log;
           events {}
           http {
+            access_log /tmp/mimos-nginx/logs/access.log;
             include /etc/nginx/mime.types;
             include /workspace/nginx/mimos-pms-api.conf;
           }
