@@ -27,38 +27,24 @@ const normalizeDecimalInput = (value) => {
   if (value === '' || value === null || value === undefined) return '0';
 
   const text = String(value).trim();
-
   if (!/^-?\d+(?:\.\d+)?$/.test(text)) {
     throw new TypeError(`Invalid numeric value: ${value}`);
   }
-
   return decimalToString(text);
 };
 
 const relationLabel = (relation, row) => {
   if (!row) return '';
-
   switch (relation) {
-    case 'clients':
-      return row.name || row.company_name || `Client #${row.id}`;
-    case 'programmes':
-      return row.code
-        ? `${row.code}${row.title ? ` — ${row.title}` : ''}`
-        : row.title || `Programme #${row.id}`;
-    case 'quotations':
-      return row.quoteNo || row.quotation_no || `Quotation #${row.id}`;
-    case 'purchase_orders':
-      return row.poNo || row.po_no || `PO #${row.id}`;
-    case 'invoices':
-      return row.invoiceNo || row.invoice_no || `Invoice #${row.id}`;
-    case 'payments':
-      return row.paymentNo || row.payment_reference || `Payment #${row.id}`;
-    case 'opportunities':
-      return row.projectTitle || row.title || `Opportunity #${row.id}`;
-    case 'participants':
-      return row.name || `Participant #${row.id}`;
-    default:
-      return row.name || row.title || row.code || `Record #${row.id}`;
+    case 'clients': return row.name || row.company_name || `Client #${row.id}`;
+    case 'programmes': return row.code ? `${row.code}${row.title ? ` — ${row.title}` : ''}` : row.title || `Programme #${row.id}`;
+    case 'quotations': return row.quoteNo || row.quotation_no || `Quotation #${row.id}`;
+    case 'purchase_orders': return row.poNo || row.po_no || `PO #${row.id}`;
+    case 'invoices': return row.invoiceNo || row.invoice_no || `Invoice #${row.id}`;
+    case 'payments': return row.paymentNo || row.payment_reference || `Payment #${row.id}`;
+    case 'opportunities': return row.projectTitle || row.title || `Opportunity #${row.id}`;
+    case 'participants': return row.name || `Participant #${row.id}`;
+    default: return row.name || row.title || row.code || `Record #${row.id}`;
   }
 };
 
@@ -101,51 +87,41 @@ export default function EntityDialog({
     invoices: invoices || [],
     payments: payments || [],
     participants: participants || [],
-  }), [
-    clients,
-    programmes,
-    opportunities,
-    quotations,
-    purchaseOrders,
-    invoices,
-    payments,
-    participants,
-  ]);
+  }), [clients, programmes, opportunities, quotations, purchaseOrders, invoices, payments, participants]);
 
   useEffect(() => {
-    if (open) setForm(initialValues || {});
-  }, [open, initialValues]);
+    if (open) {
+      const next = { ...(initialValues || {}) };
+      // Generate the idempotency key once per payment form instance. If a
+      // network response is lost and the user retries, the same operation_id
+      // prevents a second payment row from being created.
+      if (collection === 'payments' && mode === 'create' && !next.operationId) {
+        next.operationId = crypto.randomUUID();
+      }
+      setForm(next);
+    }
+  }, [open, initialValues, collection, mode]);
 
   const submit = async (e) => {
     e.preventDefault();
     if (saving) return;
-
     setSaving(true);
 
     try {
       const payload = {};
-
       fields.forEach((f) => {
         let value = form[f.name];
-
-        if (f.type === 'number') {
-          value = normalizeDecimalInput(value);
-        }
-
-        if (f.type === 'relation' && value === 'none') {
-          value = '';
-        }
-
-        if (value !== undefined) {
-          payload[f.name] = value;
-        }
+        if (f.type === 'number') value = normalizeDecimalInput(value);
+        if (f.type === 'relation' && value === 'none') value = '';
+        if (value !== undefined) payload[f.name] = value;
       });
 
-      if (mode === 'edit') {
-        if (!recordId) {
-          throw new Error('Cannot update this record because its ID is missing.');
-        }
+      if (collection === 'payments' && mode === 'create') {
+        payload.operationId = form.operationId || crypto.randomUUID();
+      }
 
+      if (mode === 'edit') {
+        if (!recordId) throw new Error('Cannot update this record because its ID is missing.');
         await updateRecord(collection, recordId, payload);
         toast.success(`${title} updated successfully.`);
       } else {
@@ -157,10 +133,7 @@ export default function EntityDialog({
       onCreated?.();
     } catch (error) {
       console.error(`[PMS] ${mode} ${collection} failed`, error);
-      toast.error(
-        error?.message ||
-          `Unable to ${mode === 'edit' ? 'update' : 'create'} ${title.toLowerCase()}.`,
-      );
+      toast.error(error?.message || `Unable to ${mode === 'edit' ? 'update' : 'create'} ${title.toLowerCase()}.`);
     } finally {
       setSaving(false);
     }
@@ -175,14 +148,7 @@ export default function EntityDialog({
           className={mode === 'edit' ? 'h-8 w-8' : 'bg-violet-600 hover:bg-violet-700'}
           title={mode === 'edit' ? `Edit ${title}` : undefined}
         >
-          {mode === 'edit' ? (
-            <Pencil className="h-4 w-4" />
-          ) : (
-            <>
-              <Plus className="mr-2 h-4 w-4" />
-              {triggerLabel || `New ${title}`}
-            </>
-          )}
+          {mode === 'edit' ? <Pencil className="h-4 w-4" /> : <><Plus className="mr-2 h-4 w-4" />{triggerLabel || `New ${title}`}</>}
         </Button>
       </DialogTrigger>
 
@@ -196,59 +162,24 @@ export default function EntityDialog({
           {fields.map((f) => {
             const staticOptions = f.options || [];
             const rows = f.relation ? relationOptions[f.relation] || [] : [];
-            const options = f.type === 'relation'
-              ? rows.map((row) => ({
-                  value: relationValue(row),
-                  label: relationLabel(f.relation, row),
-                }))
-              : staticOptions;
+            const options = f.type === 'relation' ? rows.map((row) => ({ value: relationValue(row), label: relationLabel(f.relation, row) })) : staticOptions;
 
             return (
-              <div
-                key={f.name}
-                className={`space-y-2 ${f.full ? 'sm:col-span-2' : ''}`}
-              >
+              <div key={f.name} className={`space-y-2 ${f.full ? 'sm:col-span-2' : ''}`}>
                 <Label htmlFor={`${collection}-${f.name}`}>{f.label}</Label>
-
                 {f.type === 'select' || f.type === 'relation' ? (
                   <Select
                     value={String(form[f.name] ?? '') || 'none'}
-                    onValueChange={(value) =>
-                      setForm((state) => ({
-                        ...state,
-                        [f.name]: value === 'none' ? '' : value,
-                      }))
-                    }
+                    onValueChange={(value) => setForm((state) => ({ ...state, [f.name]: value === 'none' ? '' : value }))}
                   >
-                    <SelectTrigger id={`${collection}-${f.name}`}>
-                      <SelectValue placeholder={`Select ${f.label}`} />
-                    </SelectTrigger>
+                    <SelectTrigger id={`${collection}-${f.name}`}><SelectValue placeholder={`Select ${f.label}`} /></SelectTrigger>
                     <SelectContent>
-                      {!f.required && (
-                        <SelectItem value="none">— None —</SelectItem>
-                      )}
-
-                      {options.length === 0 && (
-                        <SelectItem value="__empty" disabled>
-                          {f.type === 'relation'
-                            ? `No ${f.relation} available`
-                            : 'No options available'}
-                        </SelectItem>
-                      )}
-
+                      {!f.required && <SelectItem value="none">— None —</SelectItem>}
+                      {options.length === 0 && <SelectItem value="__empty" disabled>{f.type === 'relation' ? `No ${f.relation} available` : 'No options available'}</SelectItem>}
                       {options.map((option) => {
-                        const value = typeof option === 'string'
-                          ? option
-                          : option.value;
-                        const label = typeof option === 'string'
-                          ? option
-                          : (option.label ?? option.value);
-
-                        return (
-                          <SelectItem key={String(value)} value={String(value)}>
-                            {label}
-                          </SelectItem>
-                        );
+                        const value = typeof option === 'string' ? option : option.value;
+                        const label = typeof option === 'string' ? option : (option.label ?? option.value);
+                        return <SelectItem key={String(value)} value={String(value)}>{label}</SelectItem>;
                       })}
                     </SelectContent>
                   </Select>
@@ -261,12 +192,7 @@ export default function EntityDialog({
                     max={f.max}
                     step={f.step}
                     value={form[f.name] ?? ''}
-                    onChange={(e) =>
-                      setForm((state) => ({
-                        ...state,
-                        [f.name]: e.target.value,
-                      }))
-                    }
+                    onChange={(e) => setForm((state) => ({ ...state, [f.name]: e.target.value }))}
                     placeholder={f.placeholder}
                   />
                 )}
@@ -275,21 +201,8 @@ export default function EntityDialog({
           })}
 
           <DialogFooter className="sm:col-span-2">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => setOpen(false)}
-              disabled={saving}
-            >
-              Cancel
-            </Button>
-            <Button
-              type="submit"
-              className="bg-violet-600 hover:bg-violet-700"
-              disabled={saving}
-            >
-              {saving ? 'Saving…' : mode === 'edit' ? 'Save Changes' : 'Create'}
-            </Button>
+            <Button type="button" variant="outline" onClick={() => setOpen(false)} disabled={saving}>Cancel</Button>
+            <Button type="submit" className="bg-violet-600 hover:bg-violet-700" disabled={saving}>{saving ? 'Saving…' : mode === 'edit' ? 'Save Changes' : 'Create'}</Button>
           </DialogFooter>
         </form>
       </DialogContent>
