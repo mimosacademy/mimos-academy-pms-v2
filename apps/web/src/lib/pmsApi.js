@@ -6,25 +6,63 @@ const TABLES = Object.freeze({
   trainingDeliveries: 'training_delivery', trainingStatistics: 'training_stat', participants: 'participant',
   actionItems: 'action_item', documents: 'document', auditHistory: 'audit_history',
 });
-
 export { TABLES };
 const assertSafeTable = (table) => { if (!Object.values(TABLES).includes(table)) throw new Error('Unsupported PMS table.'); };
 const getAuthenticatedUser = async () => { const { data, error } = await supabase.auth.getUser(); if (error || !data?.user?.id) throw new Error('Authentication required. Please sign in again.'); return data.user; };
 const throwDatabaseError = (operation, table, error) => { if (!error) return; const message = String(error.message || '').toLowerCase(); if (message.includes('permission') || message.includes('row-level security') || error.code === '42501') throw new Error('You are not authorized to perform this operation.'); if (error.code === '23505') throw new Error('Duplicate transaction detected. The operation may already have been recorded.'); throw new Error(`${operation} failed for ${table}. Please try again or contact an administrator.`); };
 const sanitizePageSize = (value) => { const size = Number(value); return Number.isInteger(size) && size > 0 ? Math.min(size, 200) : 50; };
 const sanitizePage = (value) => { const page = Number(value); return Number.isInteger(page) && page > 0 ? page : 1; };
-
 export async function listRecords(table, { select = '*', filters = {}, orderBy = 'created_at', ascending = false, page = 1, pageSize = 50 } = {}) { assertSafeTable(table); const safePage = sanitizePage(page), safePageSize = sanitizePageSize(pageSize); const from = (safePage - 1) * safePageSize, to = from + safePageSize - 1; let query = supabase.from(table).select(select, { count: 'exact' }).order(orderBy, { ascending }).range(from, to); for (const [column, value] of Object.entries(filters)) if (value !== undefined && value !== null && value !== '') query = query.eq(column, value); const { data, error, count } = await query; throwDatabaseError('List', table, error); return { data: data ?? [], count: count ?? 0, page: safePage, pageSize: safePageSize }; }
 export async function getRecord(table, id, select = '*') { assertSafeTable(table); if (id === undefined || id === null || id === '') throw new Error(`Cannot fetch ${table}: record id is required.`); const { data, error } = await supabase.from(table).select(select).eq('id', id).single(); throwDatabaseError('Fetch', table, error); return data; }
 export async function createRecord(table, payload = {}) { assertSafeTable(table); const user = await getAuthenticatedUser(); const row = { ...payload, created_by: user.id, updated_by: user.id }; delete row.actor_id; delete row.actor_name; const { data, error } = await supabase.from(table).insert(row).select().single(); throwDatabaseError('Create', table, error); return data; }
 
+const lookupId = async (table, value) => {
+  if (value === undefined || value === null || String(value).trim() === '') return null;
+  const normalized = String(value).trim();
+  const { data: byName, error: nameError } = await supabase.from(table).select('id').eq('name', normalized).limit(1);
+  throwDatabaseError('Lookup', table, nameError);
+  if (byName?.[0]?.id) return byName[0].id;
+  const { data: byCode, error: codeError } = await supabase.from(table).select('id').eq('code', normalized).limit(1);
+  throwDatabaseError('Lookup', table, codeError);
+  return byCode?.[0]?.id ?? null;
+};
+
 export async function createPaymentRecord(payload = {}) {
   const user = await getAuthenticatedUser();
+  if (!payload.invoice) throw new Error('Invoice is required for a payment.');
+  if (!payload.amount || Number(payload.amount) <= 0) throw new Error('Payment amount must be greater than zero.');
+
+  // Invoice is authoritative for programme/client linkage. Do not trust values
+  // copied from the browser when recording a financial transaction.
+  const { data: invoice, error: invoiceError } = await supabase.from('invoice').select('id,programme_id,client_id').eq('id', payload.invoice).single();
+  throwDatabaseError('Validate payment invoice', 'invoice', invoiceError);
+  if (!invoice?.id || !invoice.programme_id) throw new Error('The selected invoice is not linked to a valid programme.');
+
+  const paymentMethodId = await lookupId('payment_method', payload.method);
+  const paymentStatusId = await lookupId('payment_status', payload.status || 'Completed');
+  if (payload.method && !paymentMethodId) throw new Error('Invalid payment method.');
+  if (payload.status && !paymentStatusId) throw new Error('Invalid payment status.');
+
   const operationId = payload.operation_id || crypto.randomUUID();
-  const row = { ...payload, operation_id: operationId, created_by: user.id, updated_by: user.id };
-  delete row.actor_id; delete row.actor_name;
+  const row = {
+    invoice_id: invoice.id,
+    programme_id: invoice.programme_id,
+    client_id: invoice.client_id,
+    payment_reference: payload.paymentNo,
+    amount: payload.amount,
+    payment_date: payload.date || new Date().toISOString().slice(0, 10),
+    bank_reference: payload.reference,
+    payment_method_id: paymentMethodId,
+    payment_status_id: paymentStatusId,
+    operation_id: operationId,
+    received_by_id: payload.receivedById || null,
+    created_by: user.id,
+    updated_by: user.id,
+  };
+
   const { data, error } = await supabase.from('payment').insert(row).select().single();
   if (!error) return data;
+
   if (error.code === '23505') {
     const { data: existing, error: lookupError } = await supabase.from('payment').select('*').eq('operation_id', operationId).maybeSingle();
     if (lookupError) throwDatabaseError('Payment idempotency lookup', 'payment', lookupError);
