@@ -9,7 +9,7 @@
     "start": "npm run start --prefix apps/web",
     "lint": "npm run lint --prefix apps/web",
     "migrate:pb": "python tools/migration/pocketbase_to_supabase.py pocketbase --db ./pb_data/data.db --commit",
-    "stage:excel": "python tools/migration/pocketbase_to_supabase.py excel --folder ./readme/excel --commit"
+    "stage:excel": "python tools/migration/pocketbase_to_supabase.py excel --folder ./migration-input/excel --commit"
   },
   "devDependencies": {"concurrently": "^10.0.4", "knip": "^6.32.1"},
   "workspaces": ["apps/*"]
