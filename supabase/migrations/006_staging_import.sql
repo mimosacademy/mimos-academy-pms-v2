@@ -1,22 +1,37 @@
 -- 006_staging_import.sql
 
 create table if not exists public.source_file (
-  id bigint generated always as identity primary key,
-  file_name varchar(255) not null, file_path varchar(500), file_hash varchar(64) not null, file_size_bytes bigint, file_type varchar(50),
-  upload_date timestamptz not null default now(), uploaded_by_id bigint references public.staff(id) on delete set null, description text, is_processed boolean not null default false, processed_at timestamptz
+  id bigint generated always as identity primary key, file_name varchar(255) not null, file_path varchar(500), file_hash varchar(64) not null, file_size_bytes bigint, file_type varchar(50), upload_date timestamptz not null default now(), uploaded_by_id bigint references public.staff(id) on delete set null, description text, is_processed boolean not null default false, processed_at timestamptz
 );
 create index idx_source_file_hash on public.source_file(file_hash); create index idx_source_file_name on public.source_file(file_name); create index idx_source_file_processed on public.source_file(is_processed);
 
 create table if not exists public.import_batch (
-  id bigint generated always as identity primary key,
-  batch_code varchar(50) not null unique, source_file_id bigint references public.source_file(id) on delete set null,
-  import_type varchar(50) not null, table_target varchar(100) not null, records_total integer not null default 0, records_inserted integer not null default 0, records_updated integer not null default 0, records_skipped integer not null default 0, records_failed integer not null default 0, records_in_review integer not null default 0,
-  status varchar(50) not null default 'PENDING', start_time timestamptz, end_time timestamptz, notes text, error_log text, imported_by_id bigint references public.staff(id) on delete set null,
-  created_at timestamptz not null default now(), updated_at timestamptz not null default now()
+  id bigint generated always as identity primary key, batch_code varchar(50) not null unique, source_file_id bigint references public.source_file(id) on delete set null, import_type varchar(50) not null, table_target varchar(100) not null,
+  records_total integer not null default 0, records_inserted integer not null default 0, records_updated integer not null default 0, records_skipped integer not null default 0, records_failed integer not null default 0, records_in_review integer not null default 0,
+  status varchar(50) not null default 'PENDING', start_time timestamptz, end_time timestamptz, notes text, error_log text, imported_by_id bigint references public.staff(id) on delete set null, created_at timestamptz not null default now(), updated_at timestamptz not null default now()
 );
 create index idx_import_batch_status on public.import_batch(status); create index idx_import_batch_type on public.import_batch(import_type); create index idx_import_batch_target on public.import_batch(table_target); create index idx_import_batch_source_file on public.import_batch(source_file_id);
 
--- Add lineage FKs after import_batch exists.
+create table if not exists public.stg_raw_record (
+  id bigint generated always as identity primary key,
+  import_batch_id bigint not null references public.import_batch(id) on delete cascade,
+  source_file varchar(255) not null,
+  source_sheet varchar(255),
+  source_row_number integer not null,
+  source_record_key varchar(255),
+  source_type varchar(50) not null,
+  target_table varchar(100),
+  raw_data jsonb not null,
+  normalized_data jsonb,
+  validation_status varchar(50) not null default 'PENDING',
+  validation_errors jsonb,
+  target_record_id bigint,
+  created_at timestamptz not null default now(),
+  processed_at timestamptz,
+  processed_by_id uuid references auth.users(id) on delete set null
+);
+create index idx_stg_raw_batch on public.stg_raw_record(import_batch_id); create index idx_stg_raw_source on public.stg_raw_record(source_file,source_sheet,source_row_number); create index idx_stg_raw_status on public.stg_raw_record(validation_status); create index idx_stg_raw_target on public.stg_raw_record(target_table);
+
 alter table public.account add constraint fk_account_import_batch foreign key(import_batch_id) references public.import_batch(id) on delete set null;
 alter table public.staff add constraint fk_staff_import_batch foreign key(import_batch_id) references public.import_batch(id) on delete set null;
 alter table public.client add constraint fk_client_import_batch foreign key(import_batch_id) references public.import_batch(id) on delete set null;
