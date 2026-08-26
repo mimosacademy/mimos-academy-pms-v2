@@ -79,6 +79,7 @@ print(json.load(sys.stdin)["id"])'
 }
 
 ADMIN_TOKEN="$(login users "$ADMIN_EMAIL" "$ADMIN_PASSWORD")"
+ADMIN_ID="$(printf '%s' "$(api -H "Authorization: $ADMIN_TOKEN" "$BASE_URL/api/collections/users/records?filter=$(python3 -c 'import urllib.parse; print(urllib.parse.quote("email=\\\"" + "'$ADMIN_EMAIL'" + "\\\""))')&perPage=1")" | body | record_id)"
 roles=(manager finance sales programme_pic trainer viewer)
 
 for role in "${roles[@]}"; do
@@ -92,6 +93,7 @@ print(json.dumps({
   "passwordConfirm": password,
   "name": f"CI {role}",
   "role": role,
+  "team": "MASB_Team",
 }))
 PY
 )"
@@ -151,20 +153,33 @@ if [[ "$viewer_total" != "0" ]]; then
   exit 1
 fi
 
-sales_client_payload='{"name":"CI Sales Client","status":"Active"}'
+sales_client_payload="$(python3 - "$ADMIN_ID" <<'PY'
+import json,sys
+print(json.dumps({"name":"CI Sales Client","status":"Active","createdBy":sys.argv[1]}))
+PY
+)"
 expect_status 200 -X POST -H "Authorization: $sales" -H 'Content-Type: application/json' \
   -d "$sales_client_payload" "$BASE_URL/api/collections/clients/records"
 
 expect_status 400 -X POST -H "Authorization: $viewer" -H 'Content-Type: application/json' \
-  -d '{"name":"CI Viewer Denied","status":"Active"}' "$BASE_URL/api/collections/clients/records"
+  -d "$(python3 - "$ADMIN_ID" <<'PY'
+import json,sys
+print(json.dumps({"name":"CI Viewer Denied","status":"Active","createdBy":sys.argv[1]}))
+PY
+)" "$BASE_URL/api/collections/clients/records"
 
-client_json="$(create_record "$manager" clients '{"name":"CI Financial Client","status":"Active"}')"
+client_json="$(create_record "$manager" clients "$(python3 - "$ADMIN_ID" <<'PY'
+import json,sys
+print(json.dumps({"name":"CI Financial Client","status":"Active","createdBy":sys.argv[1]}))
+PY
+)")"
 CID="$(printf '%s' "$client_json" | record_id)"
 
-programme_json="$(create_record "$manager" programmes "$(python3 - "$CID" <<'PY'
+programme_json="$(create_record "$manager" programmes "$(python3 - "$CID" "$ADMIN_ID" <<'PY'
 import json,sys
 print(json.dumps({
   "client": sys.argv[1],
+  "createdBy": sys.argv[2],
   "code": "CI-FIN-001",
   "title": "CI Financial Programme",
   "status": "Scheduled",
@@ -175,25 +190,26 @@ PY
 PID="$(printf '%s' "$programme_json" | record_id)"
 
 expect_status 200 -X POST -H "Authorization: $trainer" -H 'Content-Type: application/json' \
-  -d "$(python3 - "$PID" <<'PY'
+  -d "$(python3 - "$PID" "$ADMIN_ID" <<'PY'
 import json,sys
-print(json.dumps({"programme":sys.argv[1],"title":"CI Trainer Session","status":"Scheduled"}))
+print(json.dumps({"programme":sys.argv[1],"createdBy":sys.argv[2],"title":"CI Trainer Session","status":"Scheduled"}))
 PY
 )" "$BASE_URL/api/collections/training_delivery/records"
 
 expect_status 400 -X POST -H "Authorization: $viewer" -H 'Content-Type: application/json' \
-  -d "$(python3 - "$PID" <<'PY'
+  -d "$(python3 - "$PID" "$ADMIN_ID" <<'PY'
 import json,sys
-print(json.dumps({"programme":sys.argv[1],"title":"CI Viewer Session","status":"Scheduled"}))
+print(json.dumps({"programme":sys.argv[1],"createdBy":sys.argv[2],"title":"CI Viewer Session","status":"Scheduled"}))
 PY
 )" "$BASE_URL/api/collections/training_delivery/records"
 
-invoice_json="$(create_record "$finance" invoices "$(python3 - "$PID" "$CID" <<'PY'
+invoice_json="$(create_record "$finance" invoices "$(python3 - "$PID" "$CID" "$ADMIN_ID" <<'PY'
 import json,sys
-programme,client=sys.argv[1:]
+programme,client,created_by=sys.argv[1:]
 print(json.dumps({
   "programme": programme,
   "client": client,
+  "createdBy": created_by,
   "invoiceNo": "CI-INV-001",
   "description": "CI integrity",
   "amount": 1000,
@@ -204,13 +220,14 @@ PY
 )")"
 IID="$(printf '%s' "$invoice_json" | record_id)"
 
-create_record "$finance" payments "$(python3 - "$IID" "$PID" "$CID" <<'PY'
+create_record "$finance" payments "$(python3 - "$IID" "$PID" "$CID" "$ADMIN_ID" <<'PY'
 import json,sys
-invoice,programme,client=sys.argv[1:]
+invoice,programme,client,created_by=sys.argv[1:]
 print(json.dumps({
   "invoice": invoice,
   "programme": programme,
   "client": client,
+  "createdBy": created_by,
   "paymentNo": "CI-PAY-001",
   "amount": 600,
   "method": "Bank Transfer",
@@ -220,13 +237,14 @@ PY
 )" >/dev/null
 
 expect_status 400 -X POST -H "Authorization: $finance" -H 'Content-Type: application/json' \
-  -d "$(python3 - "$IID" "$PID" "$CID" <<'PY'
+  -d "$(python3 - "$IID" "$PID" "$CID" "$ADMIN_ID" <<'PY'
 import json,sys
-invoice,programme,client=sys.argv[1:]
+invoice,programme,client,created_by=sys.argv[1:]
 print(json.dumps({
   "invoice": invoice,
   "programme": programme,
   "client": client,
+  "createdBy": created_by,
   "paymentNo": "CI-PAY-002",
   "amount": 401,
   "method": "Bank Transfer",
