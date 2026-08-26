@@ -55,7 +55,12 @@ login() {
     printf '%s\n' "$payload" >&2
     return 1
   fi
-  printf '%s' "$payload" | python3 -c 'import json,sys; token=json.load(sys.stdin).get("token"); raise SystemExit("Authentication response did not contain token") if not token else print(token)'
+  printf '%s' "$payload" | python3 -c 'import json,sys
+payload=json.load(sys.stdin)
+token=payload.get("token")
+if not token:
+    raise SystemExit("Authentication response did not contain token")
+print(token)'
 }
 
 create_record() {
