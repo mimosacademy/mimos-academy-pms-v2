@@ -8,15 +8,16 @@ import DataTable from '@/components/DataTable';
 import StatusBadge from '@/components/StatusBadge';
 import { Button } from '@/components/ui/button';
 import { usePmsData } from '@/contexts/PmsDataContext';
-import { formatDate, formatRM, formatRMCompact } from '@/lib/format';
+import { formatDate, formatRM, formatRMCompact, decimalCompare, decimalSubtract, decimalToNumberForDisplay } from '@/lib/format';
 import { AlarmClock, HandCoins, Hourglass, Plus, Receipt } from 'lucide-react';
-
-
 
 export default function InvoicesPage() {
   const { invoices, totals } = usePmsData();
 
   const overdueCount = invoices.filter((i) => i.status === 'Overdue').length;
+  const collectionRate = decimalCompare(totals.revenue, '0') === 0
+    ? 0
+    : (decimalToNumberForDisplay(totals.collected) / decimalToNumberForDisplay(totals.revenue)) * 100;
 
   const columns = [
     { key: 'invoiceNo', label: 'Invoice No.', className: 'whitespace-nowrap font-medium text-violet-700' },
@@ -29,7 +30,10 @@ export default function InvoicesPage() {
       key: 'balance',
       label: 'Balance',
       className: 'whitespace-nowrap font-medium',
-      render: (i) => <span className={i.amount - i.paidAmount > 0 ? 'text-red-600' : 'text-slate-400'}>{formatRM(i.amount - i.paidAmount)}</span>,
+      render: (i) => {
+        const balance = decimalSubtract(i.amount, i.paidAmount);
+        return <span className={decimalCompare(balance, '0') > 0 ? 'text-red-600' : 'text-slate-400'}>{formatRM(balance)}</span>;
+      },
     },
     { key: 'issueDate', label: 'Issued', className: 'whitespace-nowrap text-slate-500', render: (i) => formatDate(i.issueDate) },
     { key: 'dueDate', label: 'Due', className: 'whitespace-nowrap text-slate-500', render: (i) => formatDate(i.dueDate) },
@@ -77,7 +81,7 @@ export default function InvoicesPage() {
 
       <div className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <StatCard title="Total Invoiced" value={formatRMCompact(totals.revenue)} icon={Receipt} tone="violet" hint={`${invoices.length} invoices issued`} />
-        <StatCard title="Collected" value={formatRMCompact(totals.collected)} icon={HandCoins} tone="emerald" hint={`${Math.round((totals.collected / totals.revenue) * 100)}% collection rate`} />
+        <StatCard title="Collected" value={formatRMCompact(totals.collected)} icon={HandCoins} tone="emerald" hint={`${Math.round(collectionRate)}% collection rate`} />
         <StatCard title="Outstanding" value={formatRMCompact(totals.outstanding)} icon={Hourglass} tone="amber" hint="awaiting payment" />
         <StatCard title="Overdue" value={formatRMCompact(totals.overdue)} icon={AlarmClock} tone="red" delta={`${overdueCount} invoices`} deltaDirection="down" hint="past due date" />
       </div>
