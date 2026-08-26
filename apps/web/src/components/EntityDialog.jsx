@@ -9,6 +9,16 @@ import {
 } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { usePmsData } from '@/contexts/PmsDataContext';
+import { decimalToString } from '@/lib/format';
+
+const normalizeDecimalInput = (value) => {
+  if (value === '' || value === null || value === undefined) return '0';
+  const text = String(value).trim();
+  if (!/^-?\d+(?:\.\d+)?$/.test(text)) {
+    throw new TypeError(`Invalid numeric value: ${value}`);
+  }
+  return decimalToString(text);
+};
 
 export default function EntityDialog({ collection, title, description, triggerLabel, fields, initialValues = {}, onCreated }) {
   const { createRecord, clients, programmes, quotations, opportunities, invoices } = usePmsData();
@@ -33,7 +43,7 @@ export default function EntityDialog({ collection, title, description, triggerLa
       const payload = {};
       fields.forEach((f) => {
         let value = form[f.name];
-        if (f.type === 'number') value = value === '' || value == null ? 0 : Number(value);
+        if (f.type === 'number') value = normalizeDecimalInput(value);
         if (f.type === 'relation' && value === 'none') value = '';
         if (value !== undefined) payload[f.name] = value;
       });
