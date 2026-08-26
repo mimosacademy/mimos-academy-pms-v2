@@ -10,13 +10,12 @@ import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { ExternalLink, CalendarRange, CheckCircle2, ClipboardList, GraduationCap } from 'lucide-react';
 import { usePmsData } from '@/contexts/PmsDataContext';
-import { formatDate, formatRM, formatRMCompact } from '@/lib/format';
+import { formatDate, formatRM, formatRMCompact, decimalAdd } from '@/lib/format';
 
 const exportSchedule = (programmes) => {
   const headers = ['Code', 'Programme', 'Client', 'Start Date', 'End Date', 'PIC', 'Participants', 'Status', 'Contract Value'];
   const escape = (v) => `"${String(v ?? '').replaceAll('"', '""')}"`;
-  const csv = [headers, ...programmes.map((p) => [p.code, p.title, p.clientName, p.startDate, p.endDate, p.pic, p.participants, p.status, p.contractValue])]
-    .map((row) => row.map(escape).join(',')).join('\n');
+  const csv = [headers, ...programmes.map((p) => [p.code, p.title, p.clientName, p.startDate, p.endDate, p.pic, p.participants, p.status, p.contractValue])].map((row) => row.map(escape).join(',')).join('\n');
   const url = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8;' }));
   const a = document.createElement('a'); a.href = url; a.download = `mimos-academy-programmes-${new Date().toISOString().slice(0, 10)}.csv`; a.click(); URL.revokeObjectURL(url);
 };
@@ -25,8 +24,8 @@ export default function ProgrammesPage() {
   const { programmes } = usePmsData();
   const inProgress = programmes.filter((p) => p.status === 'In Progress').length;
   const scheduled = programmes.filter((p) => p.status === 'Scheduled').length;
-  const totalParticipants = programmes.reduce((s, p) => s + Number(p.participants || 0), 0);
-  const orderBook = programmes.reduce((s, p) => s + Number(p.contractValue || 0), 0);
+  const totalParticipants = programmes.reduce((s, p) => s + (Number.isFinite(Number(p.participants)) ? Number(p.participants) : 0), 0);
+  const orderBook = programmes.reduce((total, p) => decimalAdd(total, p.contractValue), '0.00');
   const columns = [
     { key: 'code', label: 'Code', className: 'font-medium text-violet-700 whitespace-nowrap' },
     { key: 'title', label: 'Programme', render: (p) => <div className="min-w-52"><p className="font-medium text-slate-800">{p.title}</p><p className="text-xs text-slate-400">{p.category}</p></div> },
@@ -43,12 +42,8 @@ export default function ProgrammesPage() {
     <PageHeader title="Programmes" description="The central business entity — every opportunity, PO, delivery and collection links here.">
       <Button variant="outline" onClick={() => exportSchedule(programmes)}><CalendarRange className="mr-2 h-4 w-4" /> Export Schedule</Button>
       <EntityDialog collection="programmes" title="New Programme" description="Register a new programme and assign its initial delivery status." triggerLabel="New Programme" fields={[
-        { name: 'client', label: 'Client', type: 'relation', relation: 'clients', required: true }, { name: 'code', label: 'Programme Code', required: true }, { name: 'title', label: 'Programme Title', required: true, full: true },
-        { name: 'category', label: 'Category' }, { name: 'programmeCategory', label: 'Programme Type', type: 'select', options: [{ value: 'In-House', label: 'In-House' }, { value: 'Public', label: 'Public' }, { value: 'Workshop', label: 'Workshop' }] },
-        { name: 'startDate', label: 'Start Date', type: 'date' }, { name: 'endDate', label: 'End Date', type: 'date' }, { name: 'venue', label: 'Venue' }, { name: 'pic', label: 'Programme PIC' }, { name: 'trainer', label: 'Trainer' },
-        { name: 'status', label: 'Status', type: 'select', options: [{ value: 'Scheduled', label: 'Scheduled' }, { value: 'In Progress', label: 'In Progress' }, { value: 'Completed', label: 'Completed' }, { value: 'On Hold', label: 'On Hold' }] },
-        { name: 'participants', label: 'Participants', type: 'number', min: 0 }, { name: 'progress', label: 'Progress (%)', type: 'number', min: 0, max: 100 }, { name: 'contractValue', label: 'Contract Value (RM)', type: 'number', min: 0, step: '0.01' },
-        { name: 'accountManager', label: 'Account Manager' }, { name: 'sessionsPlanned', label: 'Sessions Planned', type: 'number', min: 0 }, { name: 'sessionsDelivered', label: 'Sessions Delivered', type: 'number', min: 0 },
+        { name: 'client', label: 'Client', type: 'relation', relation: 'clients', required: true }, { name: 'code', label: 'Programme Code', required: true }, { name: 'title', label: 'Programme Title', required: true, full: true }, { name: 'category', label: 'Category' }, { name: 'programmeCategory', label: 'Programme Type', type: 'select', options: [{ value: 'In-House', label: 'In-House' }, { value: 'Public', label: 'Public' }, { value: 'Workshop', label: 'Workshop' }] }, { name: 'startDate', label: 'Start Date', type: 'date' }, { name: 'endDate', label: 'End Date', type: 'date' }, { name: 'venue', label: 'Venue' }, { name: 'pic', label: 'Programme PIC' }, { name: 'trainer', label: 'Trainer' },
+        { name: 'status', label: 'Status', type: 'select', options: [{ value: 'Scheduled', label: 'Scheduled' }, { value: 'In Progress', label: 'In Progress' }, { value: 'Completed', label: 'Completed' }, { value: 'On Hold', label: 'On Hold' }] }, { name: 'participants', label: 'Participants', type: 'number', min: 0 }, { name: 'progress', label: 'Progress (%)', type: 'number', min: 0, max: 100 }, { name: 'contractValue', label: 'Contract Value (RM)', type: 'number', min: 0, step: '0.01' }, { name: 'accountManager', label: 'Account Manager' }, { name: 'sessionsPlanned', label: 'Sessions Planned', type: 'number', min: 0 }, { name: 'sessionsDelivered', label: 'Sessions Delivered', type: 'number', min: 0 }
       ]} />
     </PageHeader>
     <div className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4"><StatCard title="Total Programmes" value={programmes.length} icon={GraduationCap} tone="violet" hint="active portfolio" /><StatCard title="In Delivery" value={inProgress} icon={CalendarRange} tone="blue" hint="currently delivering" /><StatCard title="Scheduled" value={scheduled} icon={CheckCircle2} tone="amber" hint="starting soon" /><StatCard title="Order Book Value" value={formatRMCompact(orderBook)} icon={ClipboardList} tone="emerald" hint={`${totalParticipants} participants enrolled`} /></div>
