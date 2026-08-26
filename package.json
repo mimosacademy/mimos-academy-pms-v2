@@ -1,6 +1,6 @@
 {
-  "name": "monorepo",
-  "version": "0.0.0",
+  "name": "mimos-academy-pms-v2",
+  "version": "2.0.0",
   "private": true,
   "scripts": {
     "setup": "npm install",
@@ -8,9 +8,15 @@
     "dev": "npm run dev --prefix apps/web",
     "start": "npm run start --prefix apps/web",
     "lint": "npm run lint --prefix apps/web",
+    "validate:source": "python tools/migration/validate_source_json.py readme/Excel to json",
+    "manifest:source": "python tools/migration/build_source_manifest.py 'readme/Excel to json' --output tools/migration/source-manifest.json",
+    "reconcile:source": "python tools/migration/reconcile_sources.py 'readme/Excel to json' --output tools/migration/reconciliation-report.json",
     "migrate:pb": "python tools/migration/pocketbase_to_supabase.py pocketbase --db ./pb_data/data.db --commit",
-    "stage:excel": "python tools/migration/pocketbase_to_supabase.py excel --folder ./migration-input/excel --commit"
+    "stage:excel": "python tools/migration/json_to_staging.py 'readme/Excel to json'"
   },
-  "devDependencies": {"concurrently": "^10.0.4", "knip": "^6.32.1"},
+  "devDependencies": {
+    "concurrently": "^10.0.4",
+    "knip": "^6.32.1"
+  },
   "workspaces": ["apps/*"]
 }
