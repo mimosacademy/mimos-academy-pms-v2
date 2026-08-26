@@ -48,8 +48,20 @@ export const decimalAdd = (...values) => {
   return `${negative ? '-' : ''}${whole}.${fraction}`;
 };
 
+const decimalNegate = (value) => {
+  const normalized = decimalToString(value);
+
+  if (normalized === '0' || /^-0(?:\.0+)?$/.test(normalized)) {
+    return '0';
+  }
+
+  return normalized.startsWith('-')
+    ? normalized.slice(1)
+    : `-${normalized}`;
+};
+
 export const decimalSubtract = (a, b) =>
-  decimalAdd(a, `-${decimalToString(b)}`);
+  decimalAdd(a, decimalNegate(b));
 
 export const decimalCompare = (a, b) => {
   const left = decimalToString(a);
@@ -111,13 +123,12 @@ export const formatDate = (
   });
 };
 
-export const truncate = (text, max = 120) => {
-  if (!text) return '';
-
-  return text.length <= max
-    ? text
-    : `${text.slice(0, max).trimEnd()}…`;
-};
+export const truncate = (text, max = 120) =>
+  !text
+    ? ''
+    : text.length <= max
+      ? text
+      : `${text.slice(0, max).trimEnd()}…`;
 
 export const slugify = (text) =>
   String(text || '')
@@ -136,6 +147,10 @@ export const formatRM = (amount) =>
   })}`;
 
 const decimalDivideByInteger = (value, divisor) => {
+  if (!Number.isInteger(divisor) || divisor <= 0) {
+    throw new RangeError(`Divisor must be a positive integer: ${divisor}`);
+  }
+
   const normalized = decimalToString(value);
   const negative = normalized.startsWith('-');
   const unsigned = negative ? normalized.slice(1) : normalized;
