@@ -22,7 +22,7 @@ begin
   from pg_policies
   where schemaname='public'
     and tablename in ('client','client_contact','programme','quotation','purchase_order','invoice','payment','invoice_payment_allocation','opportunity','action_item','training_stat','participant','training_delivery','document','audit_history','completeness_score','staff')
-    and coalesce(qual,'') in ('true','(true)');
+    and lower(regexp_replace(coalesce(qual,''),'\\s','','g')) in ('true','(true)');
   if n > 0 then raise exception 'Broad USING(true) policy remains on sensitive table(s): %', n; end if;
 
   if has_function_privilege('authenticated','public.promote_stg_invoice(bigint)','execute') then
@@ -55,6 +55,45 @@ begin
     raise exception 'Storage insert policy is missing';
   end if;
 
+  -- Authorization helpers used by RLS must remain executable by authenticated,
+  -- but must not be exposed to anon.
+  if not has_function_privilege('authenticated','private.has_role(text[])','execute') then
+    raise exception 'authenticated cannot execute private.has_role';
+  end if;
+  if has_function_privilege('anon','private.has_role(text[])','execute') then
+    raise exception 'anon can execute private.has_role';
+  end if;
+  if not has_function_privilege('authenticated','private.can_access_programme(bigint)','execute') then
+    raise exception 'authenticated cannot execute private.can_access_programme';
+  end if;
+  if has_function_privilege('anon','private.can_access_programme(bigint)','execute') then
+    raise exception 'anon can execute private.can_access_programme';
+  end if;
+
+  if has_function_privilege('anon','public.is_admin()','execute') then
+    raise exception 'anon can execute legacy public.is_admin';
+  end if;
+  if has_function_privilege('anon','public.fn_refresh_programme(bigint)','execute') then
+    raise exception 'anon can execute fn_refresh_programme';
+  end if;
+  if has_function_privilege('anon','public.fn_programme_completeness(bigint)','execute') then
+    raise exception 'anon can execute fn_programme_completeness';
+  end if;
+
+  if not exists (
+    select 1 from pg_trigger
+    where tgrelid='public.staff'::regclass
+      and tgname='trg_prevent_staff_security_field_escalation'
+      and tgenabled <> 'D'
+  ) then raise exception 'Staff privilege-escalation trigger is missing'; end if;
+
+  if not exists (
+    select 1 from pg_trigger
+    where tgrelid='public.profiles'::regclass
+      and tgname='trg_prevent_profile_security_field_escalation'
+      and tgenabled <> 'D'
+  ) then raise exception 'Profile privilege-escalation trigger is missing'; end if;
+
   raise notice 'PMS V2 structural security smoke test PASSED';
 end $$;
 
@@ -66,4 +105,6 @@ end $$;
 -- FINANCE: INSERT duplicate operation_id => denied.
 -- FINANCE: INSERT allocation above payment amount => denied.
 -- USER: update/delete audit_log => denied.
+-- USER: self-update staff.role_id/is_active/auth_user_id => denied.
+-- USER: self-update profiles.role/staff_id/is_active => denied.
 -- PIC A: read Storage object under programmes/{PIC B programme}/... => denied.
