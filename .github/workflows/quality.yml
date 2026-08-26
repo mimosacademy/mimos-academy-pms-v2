@@ -1,0 +1,85 @@
+name: V2 Quality Gate
+
+on:
+  push:
+    branches: [main, 'release/**']
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  web:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: apps/web
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: apps/web/package.json
+      - run: npm install --no-audit --no-fund
+      - run: npm run lint
+      - run: npm run build
+
+  supabase-static-security:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - name: Verify production architecture
+        run: |
+          grep -q "Supabase Auth + PostgreSQL + Storage + Realtime" README.md
+          grep -q "Supabase + Vercel" docs/DEPLOYMENT.md
+      - name: Verify unique security migrations
+        run: |
+          for version in 015 016 017 018; do
+            test "$(find supabase/migrations -maxdepth 1 -type f -name "${version}_*.sql" | wc -l)" -eq 1
+          done
+      - name: Verify no broad sensitive RLS
+        run: |
+          ! grep -R -nE "create policy .*on public\.(invoice|payment|payment_allocation|invoice_payment_allocation|audit_log|audit_history).*using \(true\)" supabase/migrations
+      - name: Verify authorization boundary
+        run: |
+          ! grep -nE "create or replace function public\.(has_pms_role|can_access_programme|current_staff_id)" supabase/migrations/017_authorization_boundary_hardening.sql
+          grep -q "revoke all on function public.is_admin() from public, anon, authenticated" supabase/migrations/017_authorization_boundary_hardening.sql
+          grep -q "revoke all on function public.fn_refresh_programme(bigint) from public, anon, authenticated" supabase/migrations/017_authorization_boundary_hardening.sql
+          grep -q "revoke all on function public.fn_programme_completeness(bigint) from public, anon, authenticated" supabase/migrations/017_authorization_boundary_hardening.sql
+      - name: Verify transaction hardening
+        run: |
+          grep -q "alter column operation_id set not null" supabase/migrations/018_application_transaction_hardening.sql
+          grep -q "gen_random_uuid()" supabase/migrations/018_application_transaction_hardening.sql
+          grep -q "with check (false)" supabase/migrations/018_application_transaction_hardening.sql
+      - name: Verify staging promotion is service-role only
+        run: |
+          for f in supabase/migrations/*.sql; do
+            if grep -q "promote_stg_" "$f"; then
+              grep -q "revoke.*promote_stg_.*authenticated" "$f" || exit 1
+            fi
+          done
+      - name: Verify browser source has no service-role or PocketBase runtime
+        run: |
+          ! grep -R -nEi "SUPABASE_SERVICE_ROLE_KEY|service_role|service-role|pocketbase|pb_client|apps/pocketbase" apps/web/src --include='*.js' --include='*.jsx' --include='*.ts' --include='*.tsx'
+      - name: Verify production data is not tracked
+        run: |
+          ! git ls-files apps/pocketbase/pb_data | grep -q .
+      - name: Verify security markers
+        run: |
+          grep -q "private.validate_financial_invariants" supabase/migrations/016_security_integrity_hardening.sql
+          grep -q "ux_payment_operation_id" supabase/migrations/016_security_integrity_hardening.sql
+          grep -q "pms_documents_select" supabase/migrations/016_security_integrity_hardening.sql
+          grep -q "prevent_staff_security_field_escalation" supabase/migrations/017_authorization_boundary_hardening.sql
+          grep -q "prevent_profile_security_field_escalation" supabase/migrations/017_authorization_boundary_hardening.sql
+      - name: Verify no obvious secrets
+        run: |
+          ! git grep -nEI -- '(BEGIN (RSA|OPENSSH|EC|DSA) PRIVATE KEY|SUPABASE_SERVICE_ROLE_KEY[[:space:]]*=[[:space:]]*[^$\{]|sk-[A-Za-z0-9_-]{20,})' -- ':!*.md' ':!docs/*'
+
+  deployment-config-check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - run: test -f apps/web/vercel.json
+      - run: '! grep -nEi "Hostinger VPS for PocketBase|PocketBase backend/database/authentication|start.*PocketBase|deploy.*PocketBase" docs/DEPLOYMENT.md'
