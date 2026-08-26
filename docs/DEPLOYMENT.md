@@ -1,101 +1,150 @@
-# MIMOS Academy PMS V2 — Deployment Runbook
+# MIMOS Academy PMS V2 — Supabase + Vercel Deployment Runbook
 
-## 1. Frontend
+## 1. Authoritative architecture
+
+Production architecture is:
+
+`React/Vite → Vercel → Supabase Auth / PostgreSQL / Storage / Realtime`
+
+PocketBase is **legacy only** and must not be started, deployed, referenced by Vercel, or used as a production backend.
+
+## 2. Frontend
 
 Deploy `apps/web` as the Vercel project root.
 
-Required environment variable:
+Required browser-side environment variables:
 
 ```text
-VITE_POCKETBASE_URL=https://api-pms.mimos-academy.com
+VITE_SUPABASE_URL=https://YOUR_PROJECT_REF.supabase.co
+VITE_SUPABASE_PUBLISHABLE_KEY=YOUR_SUPABASE_PUBLISHABLE_KEY
 ```
 
-Do not put PocketBase admin credentials, encryption keys, or `pb_data` in Vercel.
+Never put `SUPABASE_SERVICE_ROLE_KEY` in browser/Vite environment variables.
 
-## 2. PocketBase VPS
+## 3. Database migrations
 
-Create a dedicated service account and application directory:
-
-```bash
-sudo useradd --system --home /var/lib/mimos-pms --shell /usr/sbin/nologin mimos-pms || true
-sudo mkdir -p /var/www/mimos-pms/apps/pocketbase/pb_data /etc/mimos-pms
-sudo chown -R mimos-pms:mimos-pms /var/www/mimos-pms/apps/pocketbase/pb_data
-sudo chmod 750 /etc/mimos-pms
-sudo chmod 640 /etc/mimos-pms/pocketbase.env
-```
-
-Create `/etc/mimos-pms/pocketbase.env` with server-only values:
+Apply Supabase migrations in filename order. The remediation migration is:
 
 ```text
-PB_ENCRYPTION_KEY=<strong-unique-encryption-key>
-PB_SUPERUSER_EMAIL=<bootstrap-admin-email>
-PB_SUPERUSER_PASSWORD=<strong-unique-bootstrap-password>
-PB_BOOTSTRAP_USER_EMAIL=<optional-application-admin-email>
-PB_BOOTSTRAP_USER_PASSWORD=<optional-application-admin-password>
+supabase/migrations/015_security_integrity_hardening.sql
 ```
 
-Never commit this file.
+Before applying it to production:
 
-Install the systemd unit:
+1. Export/backup the current database.
+2. Apply the migration in a disposable/staging project first.
+3. Test each role in the role matrix.
+4. Test invoice/payment creation, overpayment rejection and allocation limits.
+5. Test Storage access with two different programme IDs.
+6. Only then apply to production.
 
-```bash
-sudo cp systemd/mimos-pms.service /etc/systemd/system/mimos-pms.service
-sudo systemctl daemon-reload
-sudo systemctl enable --now mimos-pms
-sudo systemctl status mimos-pms --no-pager
-curl -fsS http://127.0.0.1:8090/api/health
+Never edit an already-applied migration. Add a new forward migration.
+
+## 4. Authentication and roles
+
+Every application user must have a matching active row in `public.staff.auth_user_id` and a valid `staff_role`.
+
+Minimum production roles:
+
+- SUPER_ADMIN / ADMIN
+- MANAGER
+- FINANCE
+- SALES
+- MASB_TEAM
+- PIC
+- TRAINER
+
+Do not rely on hidden React menus for authorization. PostgreSQL RLS is the security boundary.
+
+## 5. Security verification
+
+From Supabase SQL Editor and controlled test accounts, verify:
+
+- Viewer cannot read `invoice`, `payment`, or `invoice_payment_allocation`.
+- PIC/Trainer can only access programme-scoped records permitted by their programme ownership/assignment.
+- Finance can access financial records.
+- Generic authenticated users cannot execute privileged staging promotion without the function's role check.
+- Audit records cannot be updated/deleted by application roles.
+- Views used by dashboards enforce underlying RLS.
+- Storage objects under `programmes/{programme_id}/...` cannot be read across programmes.
+- Service-role credentials are absent from frontend source and Vercel browser environment variables.
+
+## 6. Storage
+
+Use this layout:
+
+```text
+programmes/{programme_id}/quotations/...
+programmes/{programme_id}/purchase-orders/...
+programmes/{programme_id}/invoices/...
+programmes/{programme_id}/supporting-documents/...
 ```
 
-The service runs as `mimos-pms`, not root, and writes only to `pb_data`.
+The programme ID in the object path is part of the authorization decision.
 
-## 3. Migrations
+## 7. CI/CD
 
-For a new instance, migrations run automatically when PocketBase starts. Before upgrading a live instance:
+CI must test the Supabase architecture, not PocketBase. Minimum release gate:
 
-1. Stop or maintenance-window the application if required.
-2. Make a verified backup of `pb_data`.
-3. Copy the new migration files.
-4. Start PocketBase and inspect `journalctl -u mimos-pms`.
-5. Verify `/api/health`.
-6. Verify authentication.
-7. Verify one read/write operation for the affected module.
+- `npm ci` after a committed, verified `package-lock.json` is available.
+- Build and lint the Vite application.
+- Apply/reset Supabase migrations in a disposable test environment.
+- Run RLS/security tests.
+- Run financial-invariant tests.
+- Run secret scanning.
 
-Never delete or rewrite an already-applied migration in production. Add a new forward migration instead.
+Until the Supabase test environment is configured, use the manual security checklist in `docs/PRODUCTION_READINESS.md` and do not treat a green PocketBase workflow as production evidence.
 
-## 4. NGINX / HTTPS
+## 8. Incident / credential response
 
-The PocketBase service must remain bound to `127.0.0.1:8090`; public traffic goes through NGINX.
+If the repository has ever contained production data or credentials:
 
-Use the repository NGINX configuration as the reverse-proxy baseline and terminate TLS with the certificate managed by Certbot/your approved certificate manager. The public endpoint must be HTTPS and must proxy the following headers:
+1. Keep the repository private immediately.
+2. Rotate Supabase service-role/database credentials and any GitHub/Vercel tokens that may have been exposed.
+3. Remove real customer/staff data from the current tree and replace it with synthetic fixtures.
+4. Treat old Git clones/forks as potentially containing the exposed material.
+5. Record and escalate the incident through the organization's DPO/security process.
 
-- `Host`
-- `X-Real-IP`
-- `X-Forwarded-For`
-- `X-Forwarded-Proto`
+## 9. Backup and restore
 
-After certificate installation, verify:
+Document the actual Supabase plan's backup capability. Perform a restore drill to a disposable environment and verify:
 
-```bash
-curl -fsS https://api-pms.mimos-academy.com/api/health
-```
+- database starts;
+- authentication works;
+- expected tables exist;
+- RLS policies exist;
+- one representative programme, invoice and payment flow works.
 
-## 5. Post-deployment smoke test
+Do not claim backup/DR readiness until a restore has been successfully demonstrated.
 
-Run the following checks from a trusted administration workstation:
+## 10. Production smoke test
 
-- Login as Super Admin.
-- Login as Manager.
-- Login as Finance.
-- Login as Sales.
-- Login as Programme PIC.
-- Login as Trainer.
-- Login as Viewer.
-- Create and read a test client/opportunity in a disposable environment.
-- Verify an invoice/payment pair.
-- Verify an overpayment is rejected by the API.
-- Verify a viewer cannot mutate protected collections.
-- Verify the deployed frontend can reach the HTTPS PocketBase endpoint.
+Run after every security or database release:
 
-## 6. Backup / restore
+- Super Admin login.
+- Manager login.
+- Finance login.
+- Sales login.
+- PIC login.
+- Trainer login.
+- Viewer login.
+- Viewer direct API access to invoice/payment must be denied.
+- PIC cross-programme access must be denied.
+- Finance payment creation succeeds for valid data.
+- Overpayment is rejected server-side.
+- Duplicate `operation_id` is rejected.
+- Allocation above payment/invoice total is rejected.
+- Programme document upload/download works only for authorized programme access.
+- Audit event is created and cannot be modified by the application role.
 
-Back up the entire PocketBase data directory and verify restore to a disposable instance. A backup is not considered verified until the restored instance boots, authenticates, and serves expected records.
+## 11. Rollback
+
+Do not blindly reverse a security migration. If a release causes a legitimate workflow failure:
+
+1. Disable affected user workflow if necessary.
+2. Preserve the failed state and error evidence.
+3. Identify the exact policy/constraint causing the failure.
+4. Apply a targeted forward migration after testing.
+5. Re-run the full security smoke test.
+
+A rollback that restores `USING (true)` or unrestricted privileged functions is not an acceptable security rollback.
