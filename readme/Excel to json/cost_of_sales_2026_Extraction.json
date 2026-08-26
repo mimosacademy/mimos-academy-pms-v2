@@ -1,0 +1,3104 @@
+{
+  "extraction_metadata": {
+    "source_filename": "cost_of_sales_2026.xlsx",
+    "source_type": "xlsx",
+    "extraction_timestamp": "2026-08-26T17:28:37.794339",
+    "extractor": "Not specified",
+    "lossless_mode": true,
+    "data_cleaned": false,
+    "data_normalized": false,
+    "data_deduplicated": false,
+    "data_corrected": false
+  },
+  "workbook": {
+    "worksheet_count": 1,
+    "worksheet_names": [
+      "cost_of_sales_2026"
+    ],
+    "total_rows": 24,
+    "total_columns": 16,
+    "formula_count": 0,
+    "error_count": 0,
+    "hidden_sheet_count": 0,
+    "merged_cell_count": 0
+  },
+  "sheets": [
+    {
+      "sheet_index": 1,
+      "sheet_name": "cost_of_sales_2026",
+      "hidden": false,
+      "row_count": 24,
+      "column_count": 16,
+      "header_row": 1,
+      "data_start_row": 2,
+      "columns": [
+        {
+          "position": 1,
+          "letter": "A",
+          "original_header": "No",
+          "detected_type": "integer",
+          "non_empty_count": 24,
+          "empty_count": 0,
+          "formula_count": 0,
+          "error_count": 0
+        },
+        {
+          "position": 2,
+          "letter": "B",
+          "original_header": "Company",
+          "detected_type": "text",
+          "non_empty_count": 24,
+          "empty_count": 0,
+          "formula_count": 0,
+          "error_count": 0
+        },
+        {
+          "position": 3,
+          "letter": "C",
+          "original_header": "Invoice No",
+          "detected_type": "text",
+          "non_empty_count": 24,
+          "empty_count": 0,
+          "formula_count": 0,
+          "error_count": 0
+        },
+        {
+          "position": 4,
+          "letter": "D",
+          "original_header": "Invoice Value",
+          "detected_type": "mixed",
+          "non_empty_count": 24,
+          "empty_count": 0,
+          "formula_count": 0,
+          "error_count": 0
+        },
+        {
+          "position": 5,
+          "letter": "E",
+          "original_header": "Invoice Date",
+          "detected_type": "datetime",
+          "non_empty_count": 20,
+          "empty_count": 4,
+          "formula_count": 0,
+          "error_count": 0
+        },
+        {
+          "position": 6,
+          "letter": "F",
+          "original_header": "Payment Date",
+          "detected_type": "mixed",
+          "non_empty_count": 24,
+          "empty_count": 0,
+          "formula_count": 0,
+          "error_count": 0
+        },
+        {
+          "position": 7,
+          "letter": "G",
+          "original_header": "Collection",
+          "detected_type": "mixed",
+          "non_empty_count": 24,
+          "empty_count": 0,
+          "formula_count": 0,
+          "error_count": 0
+        },
+        {
+          "position": 8,
+          "letter": "H",
+          "original_header": "Cost of Sales",
+          "detected_type": "integer",
+          "non_empty_count": 24,
+          "empty_count": 0,
+          "formula_count": 0,
+          "error_count": 0
+        },
+        {
+          "position": 9,
+          "letter": "I",
+          "original_header": "MIMOS Academy Cost",
+          "detected_type": "integer",
+          "non_empty_count": 24,
+          "empty_count": 0,
+          "formula_count": 0,
+          "error_count": 0
+        },
+        {
+          "position": 10,
+          "letter": "J",
+          "original_header": "Commission",
+          "detected_type": "integer",
+          "non_empty_count": 24,
+          "empty_count": 0,
+          "formula_count": 0,
+          "error_count": 0
+        },
+        {
+          "position": 11,
+          "letter": "K",
+          "original_header": "BRO Incentive",
+          "detected_type": "integer",
+          "non_empty_count": 24,
+          "empty_count": 0,
+          "formula_count": 0,
+          "error_count": 0
+        },
+        {
+          "position": 12,
+          "letter": "L",
+          "original_header": "Net Profit",
+          "detected_type": "mixed",
+          "non_empty_count": 24,
+          "empty_count": 0,
+          "formula_count": 0,
+          "error_count": 0
+        },
+        {
+          "position": 13,
+          "letter": "M",
+          "original_header": "% Profit",
+          "detected_type": "integer",
+          "non_empty_count": 24,
+          "empty_count": 0,
+          "formula_count": 0,
+          "error_count": 0
+        },
+        {
+          "position": 14,
+          "letter": "N",
+          "original_header": "Revenue",
+          "detected_type": "empty",
+          "non_empty_count": 1,
+          "empty_count": 23,
+          "formula_count": 0,
+          "error_count": 0
+        },
+        {
+          "position": 15,
+          "letter": "O",
+          "original_header": "Account",
+          "detected_type": "text",
+          "non_empty_count": 24,
+          "empty_count": 0,
+          "formula_count": 0,
+          "error_count": 0
+        },
+        {
+          "position": 16,
+          "letter": "P",
+          "original_header": "Remark",
+          "detected_type": "empty",
+          "non_empty_count": 1,
+          "empty_count": 23,
+          "formula_count": 0,
+          "error_count": 0
+        }
+      ],
+      "rows": [
+        {
+          "source_row_number": 1,
+          "cells": {
+            "No": {
+              "value": "No",
+              "formula": null,
+              "data_type": "text",
+              "is_empty": false,
+              "excel_error": null
+            },
+            "Company": {
+              "value": "Company",
+              "formula": null,
+              "data_type": "text",
+              "is_empty": false,
+              "excel_error": null
+            },
+            "Invoice No": {
+              "value": "Invoice No",
+              "formula": null,
+              "data_type": "text",
+              "is_empty": false,
+              "excel_error": null
+            },
+            "Invoice Value": {
+              "value": "Invoice Value",
+              "formula": null,
+              "data_type": "text",
+              "is_empty": false,
+              "excel_error": null
+            },
+            "Invoice Date": {
+              "value": "Invoice Date",
+              "formula": null,
+              "data_type": "text",
+              "is_empty": false,
+              "excel_error": null
+            },
+            "Payment Date": {
+              "value": "Payment Date",
+              "formula": null,
+              "data_type": "text",
+              "is_empty": false,
+              "excel_error": null
+            },
+            "Collection": {
+              "value": "Collection",
+              "formula": null,
+              "data_type": "text",
+              "is_empty": false,
+              "excel_error": null
+            },
+            "Cost of Sales": {
+              "value": "Cost of Sales",
+              "formula": null,
+              "data_type": "text",
+              "is_empty": false,
+              "excel_error": null
+            },
+            "MIMOS Academy Cost": {
+              "value": "MIMOS Academy Cost",
+              "formula": null,
+              "data_type": "text",
+              "is_empty": false,
+              "excel_error": null
+            },
+            "Commission": {
+              "value": "Commission",
+              "formula": null,
+              "data_type": "text",
+              "is_empty": false,
+              "excel_error": null
+            },
+            "BRO Incentive": {
+              "value": "BRO Incentive",
+              "formula": null,
+              "data_type": "text",
+              "is_empty": false,
+              "excel_error": null
+            },
+            "Net Profit": {
+              "value": "Net Profit",
+              "formula": null,
+              "data_type": "text",
+              "is_empty": false,
+              "excel_error": null
+            },
+            "% Profit": {
+              "value": "% Profit",
+              "formula": null,
+              "data_type": "text",
+              "is_empty": false,
+              "excel_error": null
+            },
+            "Revenue": {
+              "value": "Revenue",
+              "formula": null,
+              "data_type": "text",
+              "is_empty": false,
+              "excel_error": null
+            },
+            "Account": {
+              "value": "Account",
+              "formula": null,
+              "data_type": "text",
+              "is_empty": false,
+              "excel_error": null
+            },
+            "Remark": {
+              "value": "Remark",
+              "formula": null,
+              "data_type": "text",
+              "is_empty": false,
+              "excel_error": null
+            }
+          }
+        },
+        {
+          "source_row_number": 2,
+          "cells": {
+            "No": {
+              "value": 1,
+              "formula": null,
+              "data_type": "integer",
+              "is_empty": false,
+              "excel_error": null
+            },
+            "Company": {
+              "value": "MIMOS Berhad",
+              "formula": null,
+              "data_type": "text",
+              "is_empty": false,
+              "excel_error": null
+            },
+            "Invoice No": {
+              "value": "95000016/2026",
+              "formula": null,
+              "data_type": "text",
+              "is_empty": false,
+              "excel_error": null
+            },
+            "Invoice Value": {
+              "value": 8500,
+              "formula": null,
+              "data_type": "integer",
+              "is_empty": false,
+              "excel_error": null
+            },
+            "Invoice Date": {
+              "value": "2026-03-27 00:00:00",
+              "formula": null,
+              "data_type": "datetime",
+              "is_empty": false,
+              "excel_error": null,
+              "iso_value": "2026-03-27"
+            },
+            "Payment Date": {
+              "value": "2026-04-06 00:00:00",
+              "formula": null,
+              "data_type": "datetime",
+              "is_empty": false,
+              "excel_error": null,
+              "iso_value": "2026-04-06"
+            },
+            "Collection": {
+              "value": 8500,
+              "formula": null,
+              "data_type": "integer",
+              "is_empty": false,
+              "excel_error": null
+            },
+            "Cost of Sales": {
+              "value": 0,
+              "formula": null,
+              "data_type": "integer",
+              "is_empty": false,
+              "excel_error": null
+            },
+            "MIMOS Academy Cost": {
+              "value": 0,
+              "formula": null,
+              "data_type": "integer",
+              "is_empty": false,
+              "excel_error": null
+            },
+            "Commission": {
+              "value": 0,
+              "formula": null,
+              "data_type": "integer",
+              "is_empty": false,
+              "excel_error": null
+            },
+            "BRO Incentive": {
+              "value": 0,
+              "formula": null,
+              "data_type": "integer",
+              "is_empty": false,
+              "excel_error": null
+            },
+            "Net Profit": {
+              "value": 8500,
+              "formula": null,
+              "data_type": "integer",
+              "is_empty": false,
+              "excel_error": null
+            },
+            "% Profit": {
+              "value": 100,
+              "formula": null,
+              "data_type": "integer",
+              "is_empty": false,
+              "excel_error": null
+            },
+            "Revenue": {
+              "value": null,
+              "formula": null,
+              "data_type": "empty",
+              "is_empty": true,
+              "excel_error": null
+            },
+            "Account": {
+              "value": "MSSB",
+              "formula": null,
+              "data_type": "text",
+              "is_empty": false,
+              "excel_error": null
+            },
+            "Remark": {
+              "value": null,
+              "formula": null,
+              "data_type": "empty",
+              "is_empty": true,
+              "excel_error": null
+            }
+          }
+        },
+        {
+          "source_row_number": 3,
+          "cells": {
+            "No": {
+              "value": 2,
+              "formula": null,
+              "data_type": "integer",
+              "is_empty": false,
+              "excel_error": null
+            },
+            "Company": {
+              "value": "FGV R&D Sdn Bhd",
+              "formula": null,
+              "data_type": "text",
+              "is_empty": false,
+              "excel_error": null
+            },
+            "Invoice No": {
+              "value": "95000015/2026",
+              "formula": null,
+              "data_type": "text",
+              "is_empty": false,
+              "excel_error": null
+            },
+            "Invoice Value": {
+              "value": "1842.59",
+              "formula": null,
+              "data_type": "currency",
+              "is_empty": false,
+              "excel_error": null
+            },
+            "Invoice Date": {
+              "value": "2026-03-27 00:00:00",
+              "formula": null,
+              "data_type": "datetime",
+              "is_empty": false,
+              "excel_error": null,
+              "iso_value": "2026-03-27"
+            },
+            "Payment Date": {
+              "value": "2026-04-09 00:00:00",
+              "formula": null,
+              "data_type": "datetime",
+              "is_empty": false,
+              "excel_error": null,
+              "iso_value": "2026-04-09"
+            },
+            "Collection": {
+              "value": "1842.59",
+              "formula": null,
+              "data_type": "currency",
+              "is_empty": false,
+              "excel_error": null
+            },
+            "Cost of Sales": {
+              "value": 0,
+              "formula": null,
+              "data_type": "integer",
+              "is_empty": false,
+              "excel_error": null
+            },
+            "MIMOS Academy Cost": {
+              "value": 0,
+              "formula": null,
+              "data_type": "integer",
+              "is_empty": false,
+              "excel_error": null
+            },
+            "Commission": {
+              "value": 0,
+              "formula": null,
+              "data_type": "integer",
+              "is_empty": false,
+              "excel_error": null
+            },
+            "BRO Incentive": {
+              "value": 0,
+              "formula": null,
+              "data_type": "integer",
+              "is_empty": false,
+              "excel_error": null
+            },
+            "Net Profit": {
+              "value": "1842.59",
+              "formula": null,
+              "data_type": "currency",
+              "is_empty": false,
+              "excel_error": null
+            },
+            "% Profit": {
+              "value": 100,
+              "formula": null,
+              "data_type": "integer",
+              "is_empty": false,
+              "excel_error": null
+            },
+            "Revenue": {
+              "value": null,
+              "formula": null,
+              "data_type": "empty",
+              "is_empty": true,
+              "excel_error": null
+            },
+            "Account": {
+              "value": "MSSB",
+              "formula": null,
+              "data_type": "text",
+              "is_empty": false,
+              "excel_error": null
+            },
+            "Remark": {
+              "value": null,
+              "formula": null,
+              "data_type": "empty",
+              "is_empty": true,
+              "excel_error": null
+            }
+          }
+        },
+        {
+          "source_row_number": 4,
+          "cells": {
+            "No": {
+              "value": 3,
+              "formula": null,
+              "data_type": "integer",
+              "is_empty": false,
+              "excel_error": null
+            },
+            "Company": {
+              "value": "NUMIX Engineering Sdn Bhd",
+              "formula": null,
+              "data_type": "text",
+              "is_empty": false,
+              "excel_error": null
+            },
+            "Invoice No": {
+              "value": "95000017/2026",
+              "formula": null,
+              "data_type": "text",
+              "is_empty": false,
+              "excel_error": null
+            },
+            "Invoice Value": {
+              "value": "7370.37",
+              "formula": null,
+              "data_type": "currency",
+              "is_empty": false,
+              "excel_error": null
+            },
+            "Invoice Date": {
+              "value": "2026-03-27 00:00:00",
+              "formula": null,
+              "data_type": "datetime",
+              "is_empty": false,
+              "excel_error": null,
+              "iso_value": "2026-03-27"
+            },
+            "Payment Date": {
+              "value": "2026-04-13 00:00:00",
+              "formula": null,
+              "data_type": "datetime",
+              "is_empty": false,
+              "excel_error": null,
+              "iso_value": "2026-04-13"
+            },
+            "Collection": {
+              "value": "7370.37",
+              "formula": null,
+              "data_type": "currency",
+              "is_empty": false,
+              "excel_error": null
+            },
+            "Cost of Sales": {
+              "value": 0,
+              "formula": null,
+              "data_type": "integer",
+              "is_empty": false,
+              "excel_error": null
+            },
+            "MIMOS Academy Cost": {
+              "value": 0,
+              "formula": null,
+              "data_type": "integer",
+              "is_empty": false,
+              "excel_error": null
+            },
+            "Commission": {
+              "value": 0,
+              "formula": null,
+              "data_type": "integer",
+              "is_empty": false,
+              "excel_error": null
+            },
+            "BRO Incentive": {
+              "value": 0,
+              "formula": null,
+              "data_type": "integer",
+              "is_empty": false,
+              "excel_error": null
+            },
+            "Net Profit": {
+              "value": "7370.37",
+              "formula": null,
+              "data_type": "currency",
+              "is_empty": false,
+              "excel_error": null
+            },
+            "% Profit": {
+              "value": 100,
+              "formula": null,
+              "data_type": "integer",
+              "is_empty": false,
+              "excel_error": null
+            },
+            "Revenue": {
+              "value": null,
+              "formula": null,
+              "data_type": "empty",
+              "is_empty": true,
+              "excel_error": null
+            },
+            "Account": {
+              "value": "MSSB",
+              "formula": null,
+              "data_type": "text",
+              "is_empty": false,
+              "excel_error": null
+            },
+            "Remark": {
+              "value": null,
+              "formula": null,
+              "data_type": "empty",
+              "is_empty": true,
+              "excel_error": null
+            }
+          }
+        },
+        {
+          "source_row_number": 5,
+          "cells": {
+            "No": {
+              "value": 4,
+              "formula": null,
+              "data_type": "integer",
+              "is_empty": false,
+              "excel_error": null
+            },
+            "Company": {
+              "value": "Efficient Frontier Consulting",
+              "formula": null,
+              "data_type": "text",
+              "is_empty": false,
+              "excel_error": null
+            },
+            "Invoice No": {
+              "value": "95000063/2026",
+              "formula": null,
+              "data_type": "text",
+              "is_empty": false,
+              "excel_error": null
+            },
+            "Invoice Value": {
+              "value": 2000,
+              "formula": null,
+              "data_type": "integer",
+              "is_empty": false,
+              "excel_error": null
+            },
+            "Invoice Date": {
+              "value": "2026-02-09 00:00:00",
+              "formula": null,
+              "data_type": "datetime",
+              "is_empty": false,
+              "excel_error": null,
+              "iso_value": "2026-02-09"
+            },
+            "Payment Date": {
+              "value": "2026-01-31 00:00:00",
+              "formula": null,
+              "data_type": "datetime",
+              "is_empty": false,
+              "excel_error": null,
+              "iso_value": "2026-01-31"
+            },
+            "Collection": {
+              "value": 2000,
+              "formula": null,
+              "data_type": "integer",
+              "is_empty": false,
+              "excel_error": null
+            },
+            "Cost of Sales": {
+              "value": 0,
+              "formula": null,
+              "data_type": "integer",
+              "is_empty": false,
+              "excel_error": null
+            },
+            "MIMOS Academy Cost": {
+              "value": 0,
+              "formula": null,
+              "data_type": "integer",
+              "is_empty": false,
+              "excel_error": null
+            },
+            "Commission": {
+              "value": 0,
+              "formula": null,
+              "data_type": "integer",
+              "is_empty": false,
+              "excel_error": null
+            },
+            "BRO Incentive": {
+              "value": 0,
+              "formula": null,
+              "data_type": "integer",
+              "is_empty": false,
+              "excel_error": null
+            },
+            "Net Profit": {
+              "value": 2000,
+              "formula": null,
+              "data_type": "integer",
+              "is_empty": false,
+              "excel_error": null
+            },
+            "% Profit": {
+              "value": 100,
+              "formula": null,
+              "data_type": "integer",
+              "is_empty": false,
+              "excel_error": null
+            },
+            "Revenue": {
+              "value": null,
+              "formula": null,
+              "data_type": "empty",
+              "is_empty": true,
+              "excel_error": null
+            },
+            "Account": {
+              "value": "MB",
+              "formula": null,
+              "data_type": "text",
+              "is_empty": false,
+              "excel_error": null
+            },
+            "Remark": {
+              "value": null,
+              "formula": null,
+              "data_type": "empty",
+              "is_empty": true,
+              "excel_error": null
+            }
+          }
+        },
+        {
+          "source_row_number": 6,
+          "cells": {
+            "No": {
+              "value": 5,
+              "formula": null,
+              "data_type": "integer",
+              "is_empty": false,
+              "excel_error": null
+            },
+            "Company": {
+              "value": "University College TATI",
+              "formula": null,
+              "data_type": "text",
+              "is_empty": false,
+              "excel_error": null
+            },
+            "Invoice No": {
+              "value": "95000019/2026",
+              "formula": null,
+              "data_type": "text",
+              "is_empty": false,
+              "excel_error": null
+            },
+            "Invoice Value": {
+              "value": "4166.67",
+              "formula": null,
+              "data_type": "currency",
+              "is_empty": false,
+              "excel_error": null
+            },
+            "Invoice Date": {
+              "value": "2026-03-27 00:00:00",
+              "formula": null,
+              "data_type": "datetime",
+              "is_empty": false,
+              "excel_error": null,
+              "iso_value": "2026-03-27"
+            },
+            "Payment Date": {
+              "value": "No Data",
+              "formula": null,
+              "data_type": "text",
+              "is_empty": false,
+              "excel_error": null
+            },
+            "Collection": {
+              "value": "4166.67",
+              "formula": null,
+              "data_type": "currency",
+              "is_empty": false,
+              "excel_error": null
+            },
+            "Cost of Sales": {
+              "value": 0,
+              "formula": null,
+              "data_type": "integer",
+              "is_empty": false,
+              "excel_error": null
+            },
+            "MIMOS Academy Cost": {
+              "value": 0,
+              "formula": null,
+              "data_type": "integer",
+              "is_empty": false,
+              "excel_error": null
+            },
+            "Commission": {
+              "value": 0,
+              "formula": null,
+              "data_type": "integer",
+              "is_empty": false,
+              "excel_error": null
+            },
+            "BRO Incentive": {
+              "value": 0,
+              "formula": null,
+              "data_type": "integer",
+              "is_empty": false,
+              "excel_error": null
+            },
+            "Net Profit": {
+              "value": "4166.67",
+              "formula": null,
+              "data_type": "currency",
+              "is_empty": false,
+              "excel_error": null
+            },
+            "% Profit": {
+              "value": 100,
+              "formula": null,
+              "data_type": "integer",
+              "is_empty": false,
+              "excel_error": null
+            },
+            "Revenue": {
+              "value": null,
+              "formula": null,
+              "data_type": "empty",
+              "is_empty": true,
+              "excel_error": null
+            },
+            "Account": {
+              "value": "MSSB",
+              "formula": null,
+              "data_type": "text",
+              "is_empty": false,
+              "excel_error": null
+            },
+            "Remark": {
+              "value": null,
+              "formula": null,
+              "data_type": "empty",
+              "is_empty": true,
+              "excel_error": null
+            }
+          }
+        },
+        {
+          "source_row_number": 7,
+          "cells": {
+            "No": {
+              "value": 6,
+              "formula": null,
+              "data_type": "integer",
+              "is_empty": false,
+              "excel_error": null
+            },
+            "Company": {
+              "value": "MIMOS Berhad",
+              "formula": null,
+              "data_type": "text",
+              "is_empty": false,
+              "excel_error": null
+            },
+            "Invoice No": {
+              "value": "95000047/2026",
+              "formula": null,
+              "data_type": "text",
+              "is_empty": false,
+              "excel_error": null
+            },
+            "Invoice Value": {
+              "value": "9722.22",
+              "formula": null,
+              "data_type": "currency",
+              "is_empty": false,
+              "excel_error": null
+            },
+            "Invoice Date": {
+              "value": "2026-05-15 00:00:00",
+              "formula": null,
+              "data_type": "datetime",
+              "is_empty": false,
+              "excel_error": null,
+              "iso_value": "2026-05-15"
+            },
+            "Payment Date": {
+              "value": "2026-06-02 00:00:00",
+              "formula": null,
+              "data_type": "datetime",
+              "is_empty": false,
+              "excel_error": null,
+              "iso_value": "2026-06-02"
+            },
+            "Collection": {
+              "value": "9722.22",
+              "formula": null,
+              "data_type": "currency",
+              "is_empty": false,
+              "excel_error": null
+            },
+            "Cost of Sales": {
+              "value": 0,
+              "formula": null,
+              "data_type": "integer",
+              "is_empty": false,
+              "excel_error": null
+            },
+            "MIMOS Academy Cost": {
+              "value": 0,
+              "formula": null,
+              "data_type": "integer",
+              "is_empty": false,
+              "excel_error": null
+            },
+            "Commission": {
+              "value": 0,
+              "formula": null,
+              "data_type": "integer",
+              "is_empty": false,
+              "excel_error": null
+            },
+            "BRO Incentive": {
+              "value": 0,
+              "formula": null,
+              "data_type": "integer",
+              "is_empty": false,
+              "excel_error": null
+            },
+            "Net Profit": {
+              "value": "9722.22",
+              "formula": null,
+              "data_type": "currency",
+              "is_empty": false,
+              "excel_error": null
+            },
+            "% Profit": {
+              "value": 100,
+              "formula": null,
+              "data_type": "integer",
+              "is_empty": false,
+              "excel_error": null
+            },
+            "Revenue": {
+              "value": null,
+              "formula": null,
+              "data_type": "empty",
+              "is_empty": true,
+              "excel_error": null
+            },
+            "Account": {
+              "value": "MSSB",
+              "formula": null,
+              "data_type": "text",
+              "is_empty": false,
+              "excel_error": null
+            },
+            "Remark": {
+              "value": null,
+              "formula": null,
+              "data_type": "empty",
+              "is_empty": true,
+              "excel_error": null
+            }
+          }
+        },
+        {
+          "source_row_number": 8,
+          "cells": {
+            "No": {
+              "value": 7,
+              "formula": null,
+              "data_type": "integer",
+              "is_empty": false,
+              "excel_error": null
+            },
+            "Company": {
+              "value": "SIRIM Academy",
+              "formula": null,
+              "data_type": "text",
+              "is_empty": false,
+              "excel_error": null
+            },
+            "Invoice No": {
+              "value": "95000024/2026",
+              "formula": null,
+              "data_type": "text",
+              "is_empty": false,
+              "excel_error": null
+            },
+            "Invoice Value": {
+              "value": "19443.52",
+              "formula": null,
+              "data_type": "currency",
+              "is_empty": false,
+              "excel_error": null
+            },
+            "Invoice Date": {
+              "value": "2026-04-06 00:00:00",
+              "formula": null,
+              "data_type": "datetime",
+              "is_empty": false,
+              "excel_error": null,
+              "iso_value": "2026-04-06"
+            },
+            "Payment Date": {
+              "value": "No Data",
+              "formula": null,
+              "data_type": "text",
+              "is_empty": false,
+              "excel_error": null
+            },
+            "Collection": {
+              "value": "19443.52",
+              "formula": null,
+              "data_type": "currency",
+              "is_empty": false,
+              "excel_error": null
+            },
+            "Cost of Sales": {
+              "value": 0,
+              "formula": null,
+              "data_type": "integer",
+              "is_empty": false,
+              "excel_error": null
+            },
+            "MIMOS Academy Cost": {
+              "value": 0,
+              "formula": null,
+              "data_type": "integer",
+              "is_empty": false,
+              "excel_error": null
+            },
+            "Commission": {
+              "value": 0,
+              "formula": null,
+              "data_type": "integer",
+              "is_empty": false,
+              "excel_error": null
+            },
+            "BRO Incentive": {
+              "value": 0,
+              "formula": null,
+              "data_type": "integer",
+              "is_empty": false,
+              "excel_error": null
+            },
+            "Net Profit": {
+              "value": "19443.52",
+              "formula": null,
+              "data_type": "currency",
+              "is_empty": false,
+              "excel_error": null
+            },
+            "% Profit": {
+              "value": 100,
+              "formula": null,
+              "data_type": "integer",
+              "is_empty": false,
+              "excel_error": null
+            },
+            "Revenue": {
+              "value": null,
+              "formula": null,
+              "data_type": "empty",
+              "is_empty": true,
+              "excel_error": null
+            },
+            "Account": {
+              "value": "MSSB",
+              "formula": null,
+              "data_type": "text",
+              "is_empty": false,
+              "excel_error": null
+            },
+            "Remark": {
+              "value": null,
+              "formula": null,
+              "data_type": "empty",
+              "is_empty": true,
+              "excel_error": null
+            }
+          }
+        },
+        {
+          "source_row_number": 9,
+          "cells": {
+            "No": {
+              "value": 8,
+              "formula": null,
+              "data_type": "integer",
+              "is_empty": false,
+              "excel_error": null
+            },
+            "Company": {
+              "value": "Pahang Skills Development Center",
+              "formula": null,
+              "data_type": "text",
+              "is_empty": false,
+              "excel_error": null
+            },
+            "Invoice No": {
+              "value": "95000025/2026",
+              "formula": null,
+              "data_type": "text",
+              "is_empty": false,
+              "excel_error": null
+            },
+            "Invoice Value": {
+              "value": 8000,
+              "formula": null,
+              "data_type": "integer",
+              "is_empty": false,
+              "excel_error": null
+            },
+            "Invoice Date": {
+              "value": "2026-04-06 00:00:00",
+              "formula": null,
+              "data_type": "datetime",
+              "is_empty": false,
+              "excel_error": null,
+              "iso_value": "2026-04-06"
+            },
+            "Payment Date": {
+              "value": "No Data",
+              "formula": null,
+              "data_type": "text",
+              "is_empty": false,
+              "excel_error": null
+            },
+            "Collection": {
+              "value": 8000,
+              "formula": null,
+              "data_type": "integer",
+              "is_empty": false,
+              "excel_error": null
+            },
+            "Cost of Sales": {
+              "value": 0,
+              "formula": null,
+              "data_type": "integer",
+              "is_empty": false,
+              "excel_error": null
+            },
+            "MIMOS Academy Cost": {
+              "value": 0,
+              "formula": null,
+              "data_type": "integer",
+              "is_empty": false,
+              "excel_error": null
+            },
+            "Commission": {
+              "value": 0,
+              "formula": null,
+              "data_type": "integer",
+              "is_empty": false,
+              "excel_error": null
+            },
+            "BRO Incentive": {
+              "value": 0,
+              "formula": null,
+              "data_type": "integer",
+              "is_empty": false,
+              "excel_error": null
+            },
+            "Net Profit": {
+              "value": 8000,
+              "formula": null,
+              "data_type": "integer",
+              "is_empty": false,
+              "excel_error": null
+            },
+            "% Profit": {
+              "value": 100,
+              "formula": null,
+              "data_type": "integer",
+              "is_empty": false,
+              "excel_error": null
+            },
+            "Revenue": {
+              "value": null,
+              "formula": null,
+              "data_type": "empty",
+              "is_empty": true,
+              "excel_error": null
+            },
+            "Account": {
+              "value": "MSSB",
+              "formula": null,
+              "data_type": "text",
+              "is_empty": false,
+              "excel_error": null
+            },
+            "Remark": {
+              "value": null,
+              "formula": null,
+              "data_type": "empty",
+              "is_empty": true,
+              "excel_error": null
+            }
+          }
+        },
+        {
+          "source_row_number": 10,
+          "cells": {
+            "No": {
+              "value": 9,
+              "formula": null,
+              "data_type": "integer",
+              "is_empty": false,
+              "excel_error": null
+            },
+            "Company": {
+              "value": "UniKL MIDI",
+              "formula": null,
+              "data_type": "text",
+              "is_empty": false,
+              "excel_error": null
+            },
+            "Invoice No": {
+              "value": "95000026/2026",
+              "formula": null,
+              "data_type": "text",
+              "is_empty": false,
+              "excel_error": null
+            },
+            "Invoice Value": {
+              "value": 1360,
+              "formula": null,
+              "data_type": "integer",
+              "is_empty": false,
+              "excel_error": null
+            },
+            "Invoice Date": {
+              "value": "2026-04-13 00:00:00",
+              "formula": null,
+              "data_type": "datetime",
+              "is_empty": false,
+              "excel_error": null,
+              "iso_value": "2026-04-13"
+            },
+            "Payment Date": {
+              "value": "No Data",
+              "formula": null,
+              "data_type": "text",
+              "is_empty": false,
+              "excel_error": null
+            },
+            "Collection": {
+              "value": 1360,
+              "formula": null,
+              "data_type": "integer",
+              "is_empty": false,
+              "excel_error": null
+            },
+            "Cost of Sales": {
+              "value": 0,
+              "formula": null,
+              "data_type": "integer",
+              "is_empty": false,
+              "excel_error": null
+            },
+            "MIMOS Academy Cost": {
+              "value": 0,
+              "formula": null,
+              "data_type": "integer",
+              "is_empty": false,
+              "excel_error": null
+            },
+            "Commission": {
+              "value": 0,
+              "formula": null,
+              "data_type": "integer",
+              "is_empty": false,
+              "excel_error": null
+            },
+            "BRO Incentive": {
+              "value": 0,
+              "formula": null,
+              "data_type": "integer",
+              "is_empty": false,
+              "excel_error": null
+            },
+            "Net Profit": {
+              "value": 1360,
+              "formula": null,
+              "data_type": "integer",
+              "is_empty": false,
+              "excel_error": null
+            },
+            "% Profit": {
+              "value": 100,
+              "formula": null,
+              "data_type": "integer",
+              "is_empty": false,
+              "excel_error": null
+            },
+            "Revenue": {
+              "value": null,
+              "formula": null,
+              "data_type": "empty",
+              "is_empty": true,
+              "excel_error": null
+            },
+            "Account": {
+              "value": "MSSB",
+              "formula": null,
+              "data_type": "text",
+              "is_empty": false,
+              "excel_error": null
+            },
+            "Remark": {
+              "value": null,
+              "formula": null,
+              "data_type": "empty",
+              "is_empty": true,
+              "excel_error": null
+            }
+          }
+        },
+        {
+          "source_row_number": 11,
+          "cells": {
+            "No": {
+              "value": 10,
+              "formula": null,
+              "data_type": "integer",
+              "is_empty": false,
+              "excel_error": null
+            },
+            "Company": {
+              "value": "MIMOS Services Sdn Bhd",
+              "formula": null,
+              "data_type": "text",
+              "is_empty": false,
+              "excel_error": null
+            },
+            "Invoice No": {
+              "value": "95000251/2026",
+              "formula": null,
+              "data_type": "text",
+              "is_empty": false,
+              "excel_error": null
+            },
+            "Invoice Value": {
+              "value": "19444.44",
+              "formula": null,
+              "data_type": "currency",
+              "is_empty": false,
+              "excel_error": null
+            },
+            "Invoice Date": {
+              "value": "2026-04-23 00:00:00",
+              "formula": null,
+              "data_type": "datetime",
+              "is_empty": false,
+              "excel_error": null,
+              "iso_value": "2026-04-23"
+            },
+            "Payment Date": {
+              "value": "2026-05-20 00:00:00",
+              "formula": null,
+              "data_type": "datetime",
+              "is_empty": false,
+              "excel_error": null,
+              "iso_value": "2026-05-20"
+            },
+            "Collection": {
+              "value": "19444.44",
+              "formula": null,
+              "data_type": "currency",
+              "is_empty": false,
+              "excel_error": null
+            },
+            "Cost of Sales": {
+              "value": 0,
+              "formula": null,
+              "data_type": "integer",
+              "is_empty": false,
+              "excel_error": null
+            },
+            "MIMOS Academy Cost": {
+              "value": 0,
+              "formula": null,
+              "data_type": "integer",
+              "is_empty": false,
+              "excel_error": null
+            },
+            "Commission": {
+              "value": 0,
+              "formula": null,
+              "data_type": "integer",
+              "is_empty": false,
+              "excel_error": null
+            },
+            "BRO Incentive": {
+              "value": 0,
+              "formula": null,
+              "data_type": "integer",
+              "is_empty": false,
+              "excel_error": null
+            },
+            "Net Profit": {
+              "value": "19444.44",
+              "formula": null,
+              "data_type": "currency",
+              "is_empty": false,
+              "excel_error": null
+            },
+            "% Profit": {
+              "value": 100,
+              "formula": null,
+              "data_type": "integer",
+              "is_empty": false,
+              "excel_error": null
+            },
+            "Revenue": {
+              "value": null,
+              "formula": null,
+              "data_type": "empty",
+              "is_empty": true,
+              "excel_error": null
+            },
+            "Account": {
+              "value": "MB",
+              "formula": null,
+              "data_type": "text",
+              "is_empty": false,
+              "excel_error": null
+            },
+            "Remark": {
+              "value": null,
+              "formula": null,
+              "data_type": "empty",
+              "is_empty": true,
+              "excel_error": null
+            }
+          }
+        },
+        {
+          "source_row_number": 12,
+          "cells": {
+            "No": {
+              "value": 11,
+              "formula": null,
+              "data_type": "integer",
+              "is_empty": false,
+              "excel_error": null
+            },
+            "Company": {
+              "value": "Interscience Sdn Bhd",
+              "formula": null,
+              "data_type": "text",
+              "is_empty": false,
+              "excel_error": null
+            },
+            "Invoice No": {
+              "value": "95000252/2026",
+              "formula": null,
+              "data_type": "text",
+              "is_empty": false,
+              "excel_error": null
+            },
+            "Invoice Value": {
+              "value": 2300,
+              "formula": null,
+              "data_type": "integer",
+              "is_empty": false,
+              "excel_error": null
+            },
+            "Invoice Date": {
+              "value": "2026-04-29 00:00:00",
+              "formula": null,
+              "data_type": "datetime",
+              "is_empty": false,
+              "excel_error": null,
+              "iso_value": "2026-04-29"
+            },
+            "Payment Date": {
+              "value": "No Data",
+              "formula": null,
+              "data_type": "text",
+              "is_empty": false,
+              "excel_error": null
+            },
+            "Collection": {
+              "value": 2300,
+              "formula": null,
+              "data_type": "integer",
+              "is_empty": false,
+              "excel_error": null
+            },
+            "Cost of Sales": {
+              "value": 0,
+              "formula": null,
+              "data_type": "integer",
+              "is_empty": false,
+              "excel_error": null
+            },
+            "MIMOS Academy Cost": {
+              "value": 0,
+              "formula": null,
+              "data_type": "integer",
+              "is_empty": false,
+              "excel_error": null
+            },
+            "Commission": {
+              "value": 0,
+              "formula": null,
+              "data_type": "integer",
+              "is_empty": false,
+              "excel_error": null
+            },
+            "BRO Incentive": {
+              "value": 0,
+              "formula": null,
+              "data_type": "integer",
+              "is_empty": false,
+              "excel_error": null
+            },
+            "Net Profit": {
+              "value": 2300,
+              "formula": null,
+              "data_type": "integer",
+              "is_empty": false,
+              "excel_error": null
+            },
+            "% Profit": {
+              "value": 100,
+              "formula": null,
+              "data_type": "integer",
+              "is_empty": false,
+              "excel_error": null
+            },
+            "Revenue": {
+              "value": null,
+              "formula": null,
+              "data_type": "empty",
+              "is_empty": true,
+              "excel_error": null
+            },
+            "Account": {
+              "value": "MB",
+              "formula": null,
+              "data_type": "text",
+              "is_empty": false,
+              "excel_error": null
+            },
+            "Remark": {
+              "value": null,
+              "formula": null,
+              "data_type": "empty",
+              "is_empty": true,
+              "excel_error": null
+            }
+          }
+        },
+        {
+          "source_row_number": 13,
+          "cells": {
+            "No": {
+              "value": 12,
+              "formula": null,
+              "data_type": "integer",
+              "is_empty": false,
+              "excel_error": null
+            },
+            "Company": {
+              "value": "MIMOS Services Sdn Bhd",
+              "formula": null,
+              "data_type": "text",
+              "is_empty": false,
+              "excel_error": null
+            },
+            "Invoice No": {
+              "value": "13000029/2026",
+              "formula": null,
+              "data_type": "text",
+              "is_empty": false,
+              "excel_error": null
+            },
+            "Invoice Value": {
+              "value": 26800,
+              "formula": null,
+              "data_type": "integer",
+              "is_empty": false,
+              "excel_error": null
+            },
+            "Invoice Date": {
+              "value": "2026-04-30 00:00:00",
+              "formula": null,
+              "data_type": "datetime",
+              "is_empty": false,
+              "excel_error": null,
+              "iso_value": "2026-04-30"
+            },
+            "Payment Date": {
+              "value": "No Data",
+              "formula": null,
+              "data_type": "text",
+              "is_empty": false,
+              "excel_error": null
+            },
+            "Collection": {
+              "value": 26800,
+              "formula": null,
+              "data_type": "integer",
+              "is_empty": false,
+              "excel_error": null
+            },
+            "Cost of Sales": {
+              "value": 0,
+              "formula": null,
+              "data_type": "integer",
+              "is_empty": false,
+              "excel_error": null
+            },
+            "MIMOS Academy Cost": {
+              "value": 0,
+              "formula": null,
+              "data_type": "integer",
+              "is_empty": false,
+              "excel_error": null
+            },
+            "Commission": {
+              "value": 0,
+              "formula": null,
+              "data_type": "integer",
+              "is_empty": false,
+              "excel_error": null
+            },
+            "BRO Incentive": {
+              "value": 0,
+              "formula": null,
+              "data_type": "integer",
+              "is_empty": false,
+              "excel_error": null
+            },
+            "Net Profit": {
+              "value": 26800,
+              "formula": null,
+              "data_type": "integer",
+              "is_empty": false,
+              "excel_error": null
+            },
+            "% Profit": {
+              "value": 100,
+              "formula": null,
+              "data_type": "integer",
+              "is_empty": false,
+              "excel_error": null
+            },
+            "Revenue": {
+              "value": null,
+              "formula": null,
+              "data_type": "empty",
+              "is_empty": true,
+              "excel_error": null
+            },
+            "Account": {
+              "value": "MB",
+              "formula": null,
+              "data_type": "text",
+              "is_empty": false,
+              "excel_error": null
+            },
+            "Remark": {
+              "value": null,
+              "formula": null,
+              "data_type": "empty",
+              "is_empty": true,
+              "excel_error": null
+            }
+          }
+        },
+        {
+          "source_row_number": 14,
+          "cells": {
+            "No": {
+              "value": 13,
+              "formula": null,
+              "data_type": "integer",
+              "is_empty": false,
+              "excel_error": null
+            },
+            "Company": {
+              "value": "Exzellent Profis Sdn Bhd",
+              "formula": null,
+              "data_type": "text",
+              "is_empty": false,
+              "excel_error": null
+            },
+            "Invoice No": {
+              "value": "95000048/2026",
+              "formula": null,
+              "data_type": "text",
+              "is_empty": false,
+              "excel_error": null
+            },
+            "Invoice Value": {
+              "value": "8101.85",
+              "formula": null,
+              "data_type": "currency",
+              "is_empty": false,
+              "excel_error": null
+            },
+            "Invoice Date": {
+              "value": "2026-05-15 00:00:00",
+              "formula": null,
+              "data_type": "datetime",
+              "is_empty": false,
+              "excel_error": null,
+              "iso_value": "2026-05-15"
+            },
+            "Payment Date": {
+              "value": "2026-06-02 00:00:00",
+              "formula": null,
+              "data_type": "datetime",
+              "is_empty": false,
+              "excel_error": null,
+              "iso_value": "2026-06-02"
+            },
+            "Collection": {
+              "value": "8101.85",
+              "formula": null,
+              "data_type": "currency",
+              "is_empty": false,
+              "excel_error": null
+            },
+            "Cost of Sales": {
+              "value": 0,
+              "formula": null,
+              "data_type": "integer",
+              "is_empty": false,
+              "excel_error": null
+            },
+            "MIMOS Academy Cost": {
+              "value": 0,
+              "formula": null,
+              "data_type": "integer",
+              "is_empty": false,
+              "excel_error": null
+            },
+            "Commission": {
+              "value": 0,
+              "formula": null,
+              "data_type": "integer",
+              "is_empty": false,
+              "excel_error": null
+            },
+            "BRO Incentive": {
+              "value": 0,
+              "formula": null,
+              "data_type": "integer",
+              "is_empty": false,
+              "excel_error": null
+            },
+            "Net Profit": {
+              "value": "8101.85",
+              "formula": null,
+              "data_type": "currency",
+              "is_empty": false,
+              "excel_error": null
+            },
+            "% Profit": {
+              "value": 100,
+              "formula": null,
+              "data_type": "integer",
+              "is_empty": false,
+              "excel_error": null
+            },
+            "Revenue": {
+              "value": null,
+              "formula": null,
+              "data_type": "empty",
+              "is_empty": true,
+              "excel_error": null
+            },
+            "Account": {
+              "value": "MSSB",
+              "formula": null,
+              "data_type": "text",
+              "is_empty": false,
+              "excel_error": null
+            },
+            "Remark": {
+              "value": null,
+              "formula": null,
+              "data_type": "empty",
+              "is_empty": true,
+              "excel_error": null
+            }
+          }
+        },
+        {
+          "source_row_number": 15,
+          "cells": {
+            "No": {
+              "value": 14,
+              "formula": null,
+              "data_type": "integer",
+              "is_empty": false,
+              "excel_error": null
+            },
+            "Company": {
+              "value": "Pahang Skills Development Center",
+              "formula": null,
+              "data_type": "text",
+              "is_empty": false,
+              "excel_error": null
+            },
+            "Invoice No": {
+              "value": "95000049/2026",
+              "formula": null,
+              "data_type": "text",
+              "is_empty": false,
+              "excel_error": null
+            },
+            "Invoice Value": {
+              "value": 14000,
+              "formula": null,
+              "data_type": "integer",
+              "is_empty": false,
+              "excel_error": null
+            },
+            "Invoice Date": {
+              "value": "2026-05-15 00:00:00",
+              "formula": null,
+              "data_type": "datetime",
+              "is_empty": false,
+              "excel_error": null,
+              "iso_value": "2026-05-15"
+            },
+            "Payment Date": {
+              "value": "2026-06-05 00:00:00",
+              "formula": null,
+              "data_type": "datetime",
+              "is_empty": false,
+              "excel_error": null,
+              "iso_value": "2026-06-05"
+            },
+            "Collection": {
+              "value": 14000,
+              "formula": null,
+              "data_type": "integer",
+              "is_empty": false,
+              "excel_error": null
+            },
+            "Cost of Sales": {
+              "value": 0,
+              "formula": null,
+              "data_type": "integer",
+              "is_empty": false,
+              "excel_error": null
+            },
+            "MIMOS Academy Cost": {
+              "value": 0,
+              "formula": null,
+              "data_type": "integer",
+              "is_empty": false,
+              "excel_error": null
+            },
+            "Commission": {
+              "value": 0,
+              "formula": null,
+              "data_type": "integer",
+              "is_empty": false,
+              "excel_error": null
+            },
+            "BRO Incentive": {
+              "value": 0,
+              "formula": null,
+              "data_type": "integer",
+              "is_empty": false,
+              "excel_error": null
+            },
+            "Net Profit": {
+              "value": 14000,
+              "formula": null,
+              "data_type": "integer",
+              "is_empty": false,
+              "excel_error": null
+            },
+            "% Profit": {
+              "value": 100,
+              "formula": null,
+              "data_type": "integer",
+              "is_empty": false,
+              "excel_error": null
+            },
+            "Revenue": {
+              "value": null,
+              "formula": null,
+              "data_type": "empty",
+              "is_empty": true,
+              "excel_error": null
+            },
+            "Account": {
+              "value": "MSSB",
+              "formula": null,
+              "data_type": "text",
+              "is_empty": false,
+              "excel_error": null
+            },
+            "Remark": {
+              "value": null,
+              "formula": null,
+              "data_type": "empty",
+              "is_empty": true,
+              "excel_error": null
+            }
+          }
+        },
+        {
+          "source_row_number": 16,
+          "cells": {
+            "No": {
+              "value": 15,
+              "formula": null,
+              "data_type": "integer",
+              "is_empty": false,
+              "excel_error": null
+            },
+            "Company": {
+              "value": "UPM",
+              "formula": null,
+              "data_type": "text",
+              "is_empty": false,
+              "excel_error": null
+            },
+            "Invoice No": {
+              "value": "Pending @ Fin",
+              "formula": null,
+              "data_type": "text",
+              "is_empty": false,
+              "excel_error": null
+            },
+            "Invoice Value": {
+              "value": 1085,
+              "formula": null,
+              "data_type": "integer",
+              "is_empty": false,
+              "excel_error": null
+            },
+            "Invoice Date": {
+              "value": null,
+              "formula": null,
+              "data_type": "empty",
+              "is_empty": true,
+              "excel_error": null
+            },
+            "Payment Date": {
+              "value": "2026-04-28 00:00:00",
+              "formula": null,
+              "data_type": "datetime",
+              "is_empty": false,
+              "excel_error": null,
+              "iso_value": "2026-04-28"
+            },
+            "Collection": {
+              "value": 1085,
+              "formula": null,
+              "data_type": "integer",
+              "is_empty": false,
+              "excel_error": null
+            },
+            "Cost of Sales": {
+              "value": 0,
+              "formula": null,
+              "data_type": "integer",
+              "is_empty": false,
+              "excel_error": null
+            },
+            "MIMOS Academy Cost": {
+              "value": 0,
+              "formula": null,
+              "data_type": "integer",
+              "is_empty": false,
+              "excel_error": null
+            },
+            "Commission": {
+              "value": 0,
+              "formula": null,
+              "data_type": "integer",
+              "is_empty": false,
+              "excel_error": null
+            },
+            "BRO Incentive": {
+              "value": 0,
+              "formula": null,
+              "data_type": "integer",
+              "is_empty": false,
+              "excel_error": null
+            },
+            "Net Profit": {
+              "value": 1085,
+              "formula": null,
+              "data_type": "integer",
+              "is_empty": false,
+              "excel_error": null
+            },
+            "% Profit": {
+              "value": 100,
+              "formula": null,
+              "data_type": "integer",
+              "is_empty": false,
+              "excel_error": null
+            },
+            "Revenue": {
+              "value": null,
+              "formula": null,
+              "data_type": "empty",
+              "is_empty": true,
+              "excel_error": null
+            },
+            "Account": {
+              "value": "MSSB",
+              "formula": null,
+              "data_type": "text",
+              "is_empty": false,
+              "excel_error": null
+            },
+            "Remark": {
+              "value": null,
+              "formula": null,
+              "data_type": "empty",
+              "is_empty": true,
+              "excel_error": null
+            }
+          }
+        },
+        {
+          "source_row_number": 17,
+          "cells": {
+            "No": {
+              "value": 16,
+              "formula": null,
+              "data_type": "integer",
+              "is_empty": false,
+              "excel_error": null
+            },
+            "Company": {
+              "value": "PPKS Ilmu Sdn Bhd",
+              "formula": null,
+              "data_type": "text",
+              "is_empty": false,
+              "excel_error": null
+            },
+            "Invoice No": {
+              "value": "95000040/2026",
+              "formula": null,
+              "data_type": "text",
+              "is_empty": false,
+              "excel_error": null
+            },
+            "Invoice Value": {
+              "value": "6944.44",
+              "formula": null,
+              "data_type": "currency",
+              "is_empty": false,
+              "excel_error": null
+            },
+            "Invoice Date": {
+              "value": "2026-04-30 00:00:00",
+              "formula": null,
+              "data_type": "datetime",
+              "is_empty": false,
+              "excel_error": null,
+              "iso_value": "2026-04-30"
+            },
+            "Payment Date": {
+              "value": "2026-06-08 00:00:00",
+              "formula": null,
+              "data_type": "datetime",
+              "is_empty": false,
+              "excel_error": null,
+              "iso_value": "2026-06-08"
+            },
+            "Collection": {
+              "value": "6944.44",
+              "formula": null,
+              "data_type": "currency",
+              "is_empty": false,
+              "excel_error": null
+            },
+            "Cost of Sales": {
+              "value": 0,
+              "formula": null,
+              "data_type": "integer",
+              "is_empty": false,
+              "excel_error": null
+            },
+            "MIMOS Academy Cost": {
+              "value": 0,
+              "formula": null,
+              "data_type": "integer",
+              "is_empty": false,
+              "excel_error": null
+            },
+            "Commission": {
+              "value": 0,
+              "formula": null,
+              "data_type": "integer",
+              "is_empty": false,
+              "excel_error": null
+            },
+            "BRO Incentive": {
+              "value": 0,
+              "formula": null,
+              "data_type": "integer",
+              "is_empty": false,
+              "excel_error": null
+            },
+            "Net Profit": {
+              "value": "6944.44",
+              "formula": null,
+              "data_type": "currency",
+              "is_empty": false,
+              "excel_error": null
+            },
+            "% Profit": {
+              "value": 100,
+              "formula": null,
+              "data_type": "integer",
+              "is_empty": false,
+              "excel_error": null
+            },
+            "Revenue": {
+              "value": null,
+              "formula": null,
+              "data_type": "empty",
+              "is_empty": true,
+              "excel_error": null
+            },
+            "Account": {
+              "value": "MSSB",
+              "formula": null,
+              "data_type": "text",
+              "is_empty": false,
+              "excel_error": null
+            },
+            "Remark": {
+              "value": null,
+              "formula": null,
+              "data_type": "empty",
+              "is_empty": true,
+              "excel_error": null
+            }
+          }
+        },
+        {
+          "source_row_number": 18,
+          "cells": {
+            "No": {
+              "value": 17,
+              "formula": null,
+              "data_type": "integer",
+              "is_empty": false,
+              "excel_error": null
+            },
+            "Company": {
+              "value": "Perbadanan Usahawan Nasional Berhad (PUNB)",
+              "formula": null,
+              "data_type": "text",
+              "is_empty": false,
+              "excel_error": null
+            },
+            "Invoice No": {
+              "value": "95000054/2026",
+              "formula": null,
+              "data_type": "text",
+              "is_empty": false,
+              "excel_error": null
+            },
+            "Invoice Value": {
+              "value": "19444.44",
+              "formula": null,
+              "data_type": "currency",
+              "is_empty": false,
+              "excel_error": null
+            },
+            "Invoice Date": {
+              "value": "2026-05-21 00:00:00",
+              "formula": null,
+              "data_type": "datetime",
+              "is_empty": false,
+              "excel_error": null,
+              "iso_value": "2026-05-21"
+            },
+            "Payment Date": {
+              "value": "2026-05-26 00:00:00",
+              "formula": null,
+              "data_type": "datetime",
+              "is_empty": false,
+              "excel_error": null,
+              "iso_value": "2026-05-26"
+            },
+            "Collection": {
+              "value": "19444.44",
+              "formula": null,
+              "data_type": "currency",
+              "is_empty": false,
+              "excel_error": null
+            },
+            "Cost of Sales": {
+              "value": 0,
+              "formula": null,
+              "data_type": "integer",
+              "is_empty": false,
+              "excel_error": null
+            },
+            "MIMOS Academy Cost": {
+              "value": 0,
+              "formula": null,
+              "data_type": "integer",
+              "is_empty": false,
+              "excel_error": null
+            },
+            "Commission": {
+              "value": 0,
+              "formula": null,
+              "data_type": "integer",
+              "is_empty": false,
+              "excel_error": null
+            },
+            "BRO Incentive": {
+              "value": 0,
+              "formula": null,
+              "data_type": "integer",
+              "is_empty": false,
+              "excel_error": null
+            },
+            "Net Profit": {
+              "value": "19444.44",
+              "formula": null,
+              "data_type": "currency",
+              "is_empty": false,
+              "excel_error": null
+            },
+            "% Profit": {
+              "value": 100,
+              "formula": null,
+              "data_type": "integer",
+              "is_empty": false,
+              "excel_error": null
+            },
+            "Revenue": {
+              "value": null,
+              "formula": null,
+              "data_type": "empty",
+              "is_empty": true,
+              "excel_error": null
+            },
+            "Account": {
+              "value": "MSSB",
+              "formula": null,
+              "data_type": "text",
+              "is_empty": false,
+              "excel_error": null
+            },
+            "Remark": {
+              "value": null,
+              "formula": null,
+              "data_type": "empty",
+              "is_empty": true,
+              "excel_error": null
+            }
+          }
+        },
+        {
+          "source_row_number": 19,
+          "cells": {
+            "No": {
+              "value": 18,
+              "formula": null,
+              "data_type": "integer",
+              "is_empty": false,
+              "excel_error": null
+            },
+            "Company": {
+              "value": "MINDEF",
+              "formula": null,
+              "data_type": "text",
+              "is_empty": false,
+              "excel_error": null
+            },
+            "Invoice No": {
+              "value": "95000053/2026",
+              "formula": null,
+              "data_type": "text",
+              "is_empty": false,
+              "excel_error": null
+            },
+            "Invoice Value": {
+              "value": "46285",
+              "formula": null,
+              "data_type": "date",
+              "is_empty": false,
+              "excel_error": null,
+              "raw_value": 46285,
+              "iso_value": "2026-09-20"
+            },
+            "Invoice Date": {
+              "value": "2026-05-21 00:00:00",
+              "formula": null,
+              "data_type": "datetime",
+              "is_empty": false,
+              "excel_error": null,
+              "iso_value": "2026-05-21"
+            },
+            "Payment Date": {
+              "value": "No Data",
+              "formula": null,
+              "data_type": "text",
+              "is_empty": false,
+              "excel_error": null
+            },
+            "Collection": {
+              "value": "46285",
+              "formula": null,
+              "data_type": "date",
+              "is_empty": false,
+              "excel_error": null,
+              "raw_value": 46285,
+              "iso_value": "2026-09-20"
+            },
+            "Cost of Sales": {
+              "value": 0,
+              "formula": null,
+              "data_type": "integer",
+              "is_empty": false,
+              "excel_error": null
+            },
+            "MIMOS Academy Cost": {
+              "value": 0,
+              "formula": null,
+              "data_type": "integer",
+              "is_empty": false,
+              "excel_error": null
+            },
+            "Commission": {
+              "value": 0,
+              "formula": null,
+              "data_type": "integer",
+              "is_empty": false,
+              "excel_error": null
+            },
+            "BRO Incentive": {
+              "value": 0,
+              "formula": null,
+              "data_type": "integer",
+              "is_empty": false,
+              "excel_error": null
+            },
+            "Net Profit": {
+              "value": "46285",
+              "formula": null,
+              "data_type": "date",
+              "is_empty": false,
+              "excel_error": null,
+              "raw_value": 46285,
+              "iso_value": "2026-09-20"
+            },
+            "% Profit": {
+              "value": 100,
+              "formula": null,
+              "data_type": "integer",
+              "is_empty": false,
+              "excel_error": null
+            },
+            "Revenue": {
+              "value": null,
+              "formula": null,
+              "data_type": "empty",
+              "is_empty": true,
+              "excel_error": null
+            },
+            "Account": {
+              "value": "MSSB",
+              "formula": null,
+              "data_type": "text",
+              "is_empty": false,
+              "excel_error": null
+            },
+            "Remark": {
+              "value": null,
+              "formula": null,
+              "data_type": "empty",
+              "is_empty": true,
+              "excel_error": null
+            }
+          }
+        },
+        {
+          "source_row_number": 20,
+          "cells": {
+            "No": {
+              "value": 19,
+              "formula": null,
+              "data_type": "integer",
+              "is_empty": false,
+              "excel_error": null
+            },
+            "Company": {
+              "value": "UniKL BMI (Cohort 1)",
+              "formula": null,
+              "data_type": "text",
+              "is_empty": false,
+              "excel_error": null
+            },
+            "Invoice No": {
+              "value": "Pending @ Fin_1",
+              "formula": null,
+              "data_type": "text",
+              "is_empty": false,
+              "excel_error": null
+            },
+            "Invoice Value": {
+              "value": 1470,
+              "formula": null,
+              "data_type": "integer",
+              "is_empty": false,
+              "excel_error": null
+            },
+            "Invoice Date": {
+              "value": null,
+              "formula": null,
+              "data_type": "empty",
+              "is_empty": true,
+              "excel_error": null
+            },
+            "Payment Date": {
+              "value": "No Data",
+              "formula": null,
+              "data_type": "text",
+              "is_empty": false,
+              "excel_error": null
+            },
+            "Collection": {
+              "value": 1470,
+              "formula": null,
+              "data_type": "integer",
+              "is_empty": false,
+              "excel_error": null
+            },
+            "Cost of Sales": {
+              "value": 0,
+              "formula": null,
+              "data_type": "integer",
+              "is_empty": false,
+              "excel_error": null
+            },
+            "MIMOS Academy Cost": {
+              "value": 0,
+              "formula": null,
+              "data_type": "integer",
+              "is_empty": false,
+              "excel_error": null
+            },
+            "Commission": {
+              "value": 0,
+              "formula": null,
+              "data_type": "integer",
+              "is_empty": false,
+              "excel_error": null
+            },
+            "BRO Incentive": {
+              "value": 0,
+              "formula": null,
+              "data_type": "integer",
+              "is_empty": false,
+              "excel_error": null
+            },
+            "Net Profit": {
+              "value": 1470,
+              "formula": null,
+              "data_type": "integer",
+              "is_empty": false,
+              "excel_error": null
+            },
+            "% Profit": {
+              "value": 100,
+              "formula": null,
+              "data_type": "integer",
+              "is_empty": false,
+              "excel_error": null
+            },
+            "Revenue": {
+              "value": null,
+              "formula": null,
+              "data_type": "empty",
+              "is_empty": true,
+              "excel_error": null
+            },
+            "Account": {
+              "value": "MSSB",
+              "formula": null,
+              "data_type": "text",
+              "is_empty": false,
+              "excel_error": null
+            },
+            "Remark": {
+              "value": null,
+              "formula": null,
+              "data_type": "empty",
+              "is_empty": true,
+              "excel_error": null
+            }
+          }
+        },
+        {
+          "source_row_number": 21,
+          "cells": {
+            "No": {
+              "value": 20,
+              "formula": null,
+              "data_type": "integer",
+              "is_empty": false,
+              "excel_error": null
+            },
+            "Company": {
+              "value": "UniKL BMI (Cohort 2)",
+              "formula": null,
+              "data_type": "text",
+              "is_empty": false,
+              "excel_error": null
+            },
+            "Invoice No": {
+              "value": "Pending @ Fin_2",
+              "formula": null,
+              "data_type": "text",
+              "is_empty": false,
+              "excel_error": null
+            },
+            "Invoice Value": {
+              "value": 1470,
+              "formula": null,
+              "data_type": "integer",
+              "is_empty": false,
+              "excel_error": null
+            },
+            "Invoice Date": {
+              "value": null,
+              "formula": null,
+              "data_type": "empty",
+              "is_empty": true,
+              "excel_error": null
+            },
+            "Payment Date": {
+              "value": "No Data",
+              "formula": null,
+              "data_type": "text",
+              "is_empty": false,
+              "excel_error": null
+            },
+            "Collection": {
+              "value": 1470,
+              "formula": null,
+              "data_type": "integer",
+              "is_empty": false,
+              "excel_error": null
+            },
+            "Cost of Sales": {
+              "value": 0,
+              "formula": null,
+              "data_type": "integer",
+              "is_empty": false,
+              "excel_error": null
+            },
+            "MIMOS Academy Cost": {
+              "value": 0,
+              "formula": null,
+              "data_type": "integer",
+              "is_empty": false,
+              "excel_error": null
+            },
+            "Commission": {
+              "value": 0,
+              "formula": null,
+              "data_type": "integer",
+              "is_empty": false,
+              "excel_error": null
+            },
+            "BRO Incentive": {
+              "value": 0,
+              "formula": null,
+              "data_type": "integer",
+              "is_empty": false,
+              "excel_error": null
+            },
+            "Net Profit": {
+              "value": 1470,
+              "formula": null,
+              "data_type": "integer",
+              "is_empty": false,
+              "excel_error": null
+            },
+            "% Profit": {
+              "value": 100,
+              "formula": null,
+              "data_type": "integer",
+              "is_empty": false,
+              "excel_error": null
+            },
+            "Revenue": {
+              "value": null,
+              "formula": null,
+              "data_type": "empty",
+              "is_empty": true,
+              "excel_error": null
+            },
+            "Account": {
+              "value": "MSSB",
+              "formula": null,
+              "data_type": "text",
+              "is_empty": false,
+              "excel_error": null
+            },
+            "Remark": {
+              "value": null,
+              "formula": null,
+              "data_type": "empty",
+              "is_empty": true,
+              "excel_error": null
+            }
+          }
+        },
+        {
+          "source_row_number": 22,
+          "cells": {
+            "No": {
+              "value": 21,
+              "formula": null,
+              "data_type": "integer",
+              "is_empty": false,
+              "excel_error": null
+            },
+            "Company": {
+              "value": "MIMOS Solutions Sdn Bhd",
+              "formula": null,
+              "data_type": "text",
+              "is_empty": false,
+              "excel_error": null
+            },
+            "Invoice No": {
+              "value": "Pending @ Fin_3",
+              "formula": null,
+              "data_type": "text",
+              "is_empty": false,
+              "excel_error": null
+            },
+            "Invoice Value": {
+              "value": "19444.44",
+              "formula": null,
+              "data_type": "currency",
+              "is_empty": false,
+              "excel_error": null
+            },
+            "Invoice Date": {
+              "value": null,
+              "formula": null,
+              "data_type": "empty",
+              "is_empty": true,
+              "excel_error": null
+            },
+            "Payment Date": {
+              "value": "No Data",
+              "formula": null,
+              "data_type": "text",
+              "is_empty": false,
+              "excel_error": null
+            },
+            "Collection": {
+              "value": "19444.44",
+              "formula": null,
+              "data_type": "currency",
+              "is_empty": false,
+              "excel_error": null
+            },
+            "Cost of Sales": {
+              "value": 0,
+              "formula": null,
+              "data_type": "integer",
+              "is_empty": false,
+              "excel_error": null
+            },
+            "MIMOS Academy Cost": {
+              "value": 0,
+              "formula": null,
+              "data_type": "integer",
+              "is_empty": false,
+              "excel_error": null
+            },
+            "Commission": {
+              "value": 0,
+              "formula": null,
+              "data_type": "integer",
+              "is_empty": false,
+              "excel_error": null
+            },
+            "BRO Incentive": {
+              "value": 0,
+              "formula": null,
+              "data_type": "integer",
+              "is_empty": false,
+              "excel_error": null
+            },
+            "Net Profit": {
+              "value": "19444.44",
+              "formula": null,
+              "data_type": "currency",
+              "is_empty": false,
+              "excel_error": null
+            },
+            "% Profit": {
+              "value": 100,
+              "formula": null,
+              "data_type": "integer",
+              "is_empty": false,
+              "excel_error": null
+            },
+            "Revenue": {
+              "value": null,
+              "formula": null,
+              "data_type": "empty",
+              "is_empty": true,
+              "excel_error": null
+            },
+            "Account": {
+              "value": "MSSB",
+              "formula": null,
+              "data_type": "text",
+              "is_empty": false,
+              "excel_error": null
+            },
+            "Remark": {
+              "value": null,
+              "formula": null,
+              "data_type": "empty",
+              "is_empty": true,
+              "excel_error": null
+            }
+          }
+        },
+        {
+          "source_row_number": 23,
+          "cells": {
+            "No": {
+              "value": 22,
+              "formula": null,
+              "data_type": "integer",
+              "is_empty": false,
+              "excel_error": null
+            },
+            "Company": {
+              "value": "Wice Solution",
+              "formula": null,
+              "data_type": "text",
+              "is_empty": false,
+              "excel_error": null
+            },
+            "Invoice No": {
+              "value": "95000036/2026",
+              "formula": null,
+              "data_type": "text",
+              "is_empty": false,
+              "excel_error": null
+            },
+            "Invoice Value": {
+              "value": 1495,
+              "formula": null,
+              "data_type": "integer",
+              "is_empty": false,
+              "excel_error": null
+            },
+            "Invoice Date": {
+              "value": "2026-04-30 00:00:00",
+              "formula": null,
+              "data_type": "datetime",
+              "is_empty": false,
+              "excel_error": null,
+              "iso_value": "2026-04-30"
+            },
+            "Payment Date": {
+              "value": "2026-05-11 00:00:00",
+              "formula": null,
+              "data_type": "datetime",
+              "is_empty": false,
+              "excel_error": null,
+              "iso_value": "2026-05-11"
+            },
+            "Collection": {
+              "value": 1495,
+              "formula": null,
+              "data_type": "integer",
+              "is_empty": false,
+              "excel_error": null
+            },
+            "Cost of Sales": {
+              "value": 0,
+              "formula": null,
+              "data_type": "integer",
+              "is_empty": false,
+              "excel_error": null
+            },
+            "MIMOS Academy Cost": {
+              "value": 0,
+              "formula": null,
+              "data_type": "integer",
+              "is_empty": false,
+              "excel_error": null
+            },
+            "Commission": {
+              "value": 0,
+              "formula": null,
+              "data_type": "integer",
+              "is_empty": false,
+              "excel_error": null
+            },
+            "BRO Incentive": {
+              "value": 0,
+              "formula": null,
+              "data_type": "integer",
+              "is_empty": false,
+              "excel_error": null
+            },
+            "Net Profit": {
+              "value": 1495,
+              "formula": null,
+              "data_type": "integer",
+              "is_empty": false,
+              "excel_error": null
+            },
+            "% Profit": {
+              "value": 100,
+              "formula": null,
+              "data_type": "integer",
+              "is_empty": false,
+              "excel_error": null
+            },
+            "Revenue": {
+              "value": null,
+              "formula": null,
+              "data_type": "empty",
+              "is_empty": true,
+              "excel_error": null
+            },
+            "Account": {
+              "value": "MSSB",
+              "formula": null,
+              "data_type": "text",
+              "is_empty": false,
+              "excel_error": null
+            },
+            "Remark": {
+              "value": null,
+              "formula": null,
+              "data_type": "empty",
+              "is_empty": true,
+              "excel_error": null
+            }
+          }
+        },
+        {
+          "source_row_number": 24,
+          "cells": {
+            "No": {
+              "value": 23,
+              "formula": null,
+              "data_type": "integer",
+              "is_empty": false,
+              "excel_error": null
+            },
+            "Company": {
+              "value": "Knowledgecom",
+              "formula": null,
+              "data_type": "text",
+              "is_empty": false,
+              "excel_error": null
+            },
+            "Invoice No": {
+              "value": "95000199/2026",
+              "formula": null,
+              "data_type": "text",
+              "is_empty": false,
+              "excel_error": null
+            },
+            "Invoice Value": {
+              "value": "16792.21",
+              "formula": null,
+              "data_type": "currency",
+              "is_empty": false,
+              "excel_error": null
+            },
+            "Invoice Date": {
+              "value": "2026-04-23 00:00:00",
+              "formula": null,
+              "data_type": "datetime",
+              "is_empty": false,
+              "excel_error": null,
+              "iso_value": "2026-04-23"
+            },
+            "Payment Date": {
+              "value": "2026-05-28 00:00:00",
+              "formula": null,
+              "data_type": "datetime",
+              "is_empty": false,
+              "excel_error": null,
+              "iso_value": "2026-05-28"
+            },
+            "Collection": {
+              "value": "16792.21",
+              "formula": null,
+              "data_type": "currency",
+              "is_empty": false,
+              "excel_error": null
+            },
+            "Cost of Sales": {
+              "value": 0,
+              "formula": null,
+              "data_type": "integer",
+              "is_empty": false,
+              "excel_error": null
+            },
+            "MIMOS Academy Cost": {
+              "value": 0,
+              "formula": null,
+              "data_type": "integer",
+              "is_empty": false,
+              "excel_error": null
+            },
+            "Commission": {
+              "value": 0,
+              "formula": null,
+              "data_type": "integer",
+              "is_empty": false,
+              "excel_error": null
+            },
+            "BRO Incentive": {
+              "value": 0,
+              "formula": null,
+              "data_type": "integer",
+              "is_empty": false,
+              "excel_error": null
+            },
+            "Net Profit": {
+              "value": "16792.21",
+              "formula": null,
+              "data_type": "currency",
+              "is_empty": false,
+              "excel_error": null
+            },
+            "% Profit": {
+              "value": 100,
+              "formula": null,
+              "data_type": "integer",
+              "is_empty": false,
+              "excel_error": null
+            },
+            "Revenue": {
+              "value": null,
+              "formula": null,
+              "data_type": "empty",
+              "is_empty": true,
+              "excel_error": null
+            },
+            "Account": {
+              "value": "MSSB",
+              "formula": null,
+              "data_type": "text",
+              "is_empty": false,
+              "excel_error": null
+            },
+            "Remark": {
+              "value": null,
+              "formula": null,
+              "data_type": "empty",
+              "is_empty": true,
+              "excel_error": null
+            }
+          }
+        }
+      ],
+      "observations": [
+        {
+          "type": "mixed_data_type",
+          "column": "Invoice Value",
+          "reason": "Column 'Invoice Value' contains multiple data types"
+        },
+        {
+          "type": "mixed_data_type",
+          "column": "Payment Date",
+          "reason": "Column 'Payment Date' contains multiple data types"
+        },
+        {
+          "type": "mixed_data_type",
+          "column": "Collection",
+          "reason": "Column 'Collection' contains multiple data types"
+        },
+        {
+          "type": "mixed_data_type",
+          "column": "Net Profit",
+          "reason": "Column 'Net Profit' contains multiple data types"
+        }
+      ]
+    }
+  ],
+  "integrity": {
+    "all_sheets_processed": true,
+    "all_rows_processed": true,
+    "all_columns_processed": true,
+    "formulas_preserved": true,
+    "errors_preserved": true,
+    "empty_cells_preserved": true,
+    "duplicates_preserved": true,
+    "data_cleaned": false,
+    "data_corrected": false,
+    "data_deduplicated": false,
+    "data_normalized": false,
+    "unextractable_items": []
+  },
+  "observations": [
+    {
+      "type": "mixed_data_type",
+      "column": "Invoice Value",
+      "reason": "Column 'Invoice Value' contains multiple data types"
+    },
+    {
+      "type": "mixed_data_type",
+      "column": "Payment Date",
+      "reason": "Column 'Payment Date' contains multiple data types"
+    },
+    {
+      "type": "mixed_data_type",
+      "column": "Collection",
+      "reason": "Column 'Collection' contains multiple data types"
+    },
+    {
+      "type": "mixed_data_type",
+      "column": "Net Profit",
+      "reason": "Column 'Net Profit' contains multiple data types"
+    }
+  ]
+}

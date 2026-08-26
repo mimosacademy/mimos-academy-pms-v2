@@ -1,0 +1,906 @@
+{
+  "extraction_metadata": {
+    "source_filename": "User Profiles Mapping.xlsx",
+    "source_type": "xlsx",
+    "extraction_timestamp": "2026-08-26T17:28:36.343446",
+    "extractor": "Not specified",
+    "lossless_mode": true,
+    "data_cleaned": false,
+    "data_normalized": false,
+    "data_deduplicated": false,
+    "data_corrected": false
+  },
+  "workbook": {
+    "worksheet_count": 1,
+    "worksheet_names": [
+      "Sheet1"
+    ],
+    "total_rows": 20,
+    "total_columns": 5,
+    "formula_count": 0,
+    "error_count": 0,
+    "hidden_sheet_count": 0,
+    "merged_cell_count": 0
+  },
+  "sheets": [
+    {
+      "sheet_index": 1,
+      "sheet_name": "Sheet1",
+      "hidden": false,
+      "row_count": 20,
+      "column_count": 5,
+      "header_row": 1,
+      "data_start_row": 2,
+      "columns": [
+        {
+          "position": 1,
+          "letter": "A",
+          "original_header": "Bil",
+          "detected_type": "integer",
+          "non_empty_count": 20,
+          "empty_count": 0,
+          "formula_count": 0,
+          "error_count": 0
+        },
+        {
+          "position": 2,
+          "letter": "B",
+          "original_header": "staff_name",
+          "detected_type": "text",
+          "non_empty_count": 20,
+          "empty_count": 0,
+          "formula_count": 0,
+          "error_count": 0
+        },
+        {
+          "position": 3,
+          "letter": "C",
+          "original_header": "role",
+          "detected_type": "text",
+          "non_empty_count": 20,
+          "empty_count": 0,
+          "formula_count": 0,
+          "error_count": 0
+        },
+        {
+          "position": 4,
+          "letter": "D",
+          "original_header": "email",
+          "detected_type": "text",
+          "non_empty_count": 20,
+          "empty_count": 0,
+          "formula_count": 0,
+          "error_count": 0
+        },
+        {
+          "position": 5,
+          "letter": "E",
+          "original_header": "Defauls Password",
+          "detected_type": "text",
+          "non_empty_count": 20,
+          "empty_count": 0,
+          "formula_count": 0,
+          "error_count": 0
+        }
+      ],
+      "rows": [
+        {
+          "source_row_number": 1,
+          "cells": {
+            "Bil": {
+              "value": "Bil",
+              "formula": null,
+              "data_type": "text",
+              "is_empty": false,
+              "excel_error": null
+            },
+            "staff_name": {
+              "value": "staff_name",
+              "formula": null,
+              "data_type": "text",
+              "is_empty": false,
+              "excel_error": null
+            },
+            "role": {
+              "value": "role",
+              "formula": null,
+              "data_type": "text",
+              "is_empty": false,
+              "excel_error": null
+            },
+            "email": {
+              "value": "email",
+              "formula": null,
+              "data_type": "text",
+              "is_empty": false,
+              "excel_error": null
+            },
+            "Defauls Password": {
+              "value": "Defauls Password",
+              "formula": null,
+              "data_type": "text",
+              "is_empty": false,
+              "excel_error": null
+            }
+          }
+        },
+        {
+          "source_row_number": 2,
+          "cells": {
+            "Bil": {
+              "value": 1,
+              "formula": null,
+              "data_type": "integer",
+              "is_empty": false,
+              "excel_error": null
+            },
+            "staff_name": {
+              "value": "Zalina Sayuti",
+              "formula": null,
+              "data_type": "text",
+              "is_empty": false,
+              "excel_error": null
+            },
+            "role": {
+              "value": "MASB_Team",
+              "formula": null,
+              "data_type": "text",
+              "is_empty": false,
+              "excel_error": null
+            },
+            "email": {
+              "value": "zalina@mimos.my",
+              "formula": null,
+              "data_type": "text",
+              "is_empty": false,
+              "excel_error": null
+            },
+            "Defauls Password": {
+              "value": "masb.12345",
+              "formula": null,
+              "data_type": "text",
+              "is_empty": false,
+              "excel_error": null
+            }
+          }
+        },
+        {
+          "source_row_number": 3,
+          "cells": {
+            "Bil": {
+              "value": 2,
+              "formula": null,
+              "data_type": "integer",
+              "is_empty": false,
+              "excel_error": null
+            },
+            "staff_name": {
+              "value": "Siti Sarah",
+              "formula": null,
+              "data_type": "text",
+              "is_empty": false,
+              "excel_error": null
+            },
+            "role": {
+              "value": "MASB_Team",
+              "formula": null,
+              "data_type": "text",
+              "is_empty": false,
+              "excel_error": null
+            },
+            "email": {
+              "value": "sitisarah.ramli@mimos.my",
+              "formula": null,
+              "data_type": "text",
+              "is_empty": false,
+              "excel_error": null
+            },
+            "Defauls Password": {
+              "value": "masb.12345",
+              "formula": null,
+              "data_type": "text",
+              "is_empty": false,
+              "excel_error": null
+            }
+          }
+        },
+        {
+          "source_row_number": 4,
+          "cells": {
+            "Bil": {
+              "value": 3,
+              "formula": null,
+              "data_type": "integer",
+              "is_empty": false,
+              "excel_error": null
+            },
+            "staff_name": {
+              "value": "Abu Sa'id",
+              "formula": null,
+              "data_type": "text",
+              "is_empty": false,
+              "excel_error": null
+            },
+            "role": {
+              "value": "MASB_Team",
+              "formula": null,
+              "data_type": "text",
+              "is_empty": false,
+              "excel_error": null
+            },
+            "email": {
+              "value": "abu.razak@mimos.my",
+              "formula": null,
+              "data_type": "text",
+              "is_empty": false,
+              "excel_error": null
+            },
+            "Defauls Password": {
+              "value": "masb.12345",
+              "formula": null,
+              "data_type": "text",
+              "is_empty": false,
+              "excel_error": null
+            }
+          }
+        },
+        {
+          "source_row_number": 5,
+          "cells": {
+            "Bil": {
+              "value": 4,
+              "formula": null,
+              "data_type": "integer",
+              "is_empty": false,
+              "excel_error": null
+            },
+            "staff_name": {
+              "value": "Qusyairi",
+              "formula": null,
+              "data_type": "text",
+              "is_empty": false,
+              "excel_error": null
+            },
+            "role": {
+              "value": "MASB_Team",
+              "formula": null,
+              "data_type": "text",
+              "is_empty": false,
+              "excel_error": null
+            },
+            "email": {
+              "value": "qusyairi.zolkefle@mimos.my",
+              "formula": null,
+              "data_type": "text",
+              "is_empty": false,
+              "excel_error": null
+            },
+            "Defauls Password": {
+              "value": "masb.12345",
+              "formula": null,
+              "data_type": "text",
+              "is_empty": false,
+              "excel_error": null
+            }
+          }
+        },
+        {
+          "source_row_number": 6,
+          "cells": {
+            "Bil": {
+              "value": 5,
+              "formula": null,
+              "data_type": "integer",
+              "is_empty": false,
+              "excel_error": null
+            },
+            "staff_name": {
+              "value": "Fuziah",
+              "formula": null,
+              "data_type": "text",
+              "is_empty": false,
+              "excel_error": null
+            },
+            "role": {
+              "value": "MASB_Team",
+              "formula": null,
+              "data_type": "text",
+              "is_empty": false,
+              "excel_error": null
+            },
+            "email": {
+              "value": "fuziah.rahim@mimos.my",
+              "formula": null,
+              "data_type": "text",
+              "is_empty": false,
+              "excel_error": null
+            },
+            "Defauls Password": {
+              "value": "masb.12345",
+              "formula": null,
+              "data_type": "text",
+              "is_empty": false,
+              "excel_error": null
+            }
+          }
+        },
+        {
+          "source_row_number": 7,
+          "cells": {
+            "Bil": {
+              "value": 6,
+              "formula": null,
+              "data_type": "integer",
+              "is_empty": false,
+              "excel_error": null
+            },
+            "staff_name": {
+              "value": "Adilah",
+              "formula": null,
+              "data_type": "text",
+              "is_empty": false,
+              "excel_error": null
+            },
+            "role": {
+              "value": "MASB_Team",
+              "formula": null,
+              "data_type": "text",
+              "is_empty": false,
+              "excel_error": null
+            },
+            "email": {
+              "value": "adilah.nisman@mimos.my",
+              "formula": null,
+              "data_type": "text",
+              "is_empty": false,
+              "excel_error": null
+            },
+            "Defauls Password": {
+              "value": "masb.12345",
+              "formula": null,
+              "data_type": "text",
+              "is_empty": false,
+              "excel_error": null
+            }
+          }
+        },
+        {
+          "source_row_number": 8,
+          "cells": {
+            "Bil": {
+              "value": 7,
+              "formula": null,
+              "data_type": "integer",
+              "is_empty": false,
+              "excel_error": null
+            },
+            "staff_name": {
+              "value": "Aisyah",
+              "formula": null,
+              "data_type": "text",
+              "is_empty": false,
+              "excel_error": null
+            },
+            "role": {
+              "value": "MASB_Team",
+              "formula": null,
+              "data_type": "text",
+              "is_empty": false,
+              "excel_error": null
+            },
+            "email": {
+              "value": "aisyah.alias@mimos.my",
+              "formula": null,
+              "data_type": "text",
+              "is_empty": false,
+              "excel_error": null
+            },
+            "Defauls Password": {
+              "value": "masb.12345",
+              "formula": null,
+              "data_type": "text",
+              "is_empty": false,
+              "excel_error": null
+            }
+          }
+        },
+        {
+          "source_row_number": 9,
+          "cells": {
+            "Bil": {
+              "value": 8,
+              "formula": null,
+              "data_type": "integer",
+              "is_empty": false,
+              "excel_error": null
+            },
+            "staff_name": {
+              "value": "Dr. Ahmad Nizar",
+              "formula": null,
+              "data_type": "text",
+              "is_empty": false,
+              "excel_error": null
+            },
+            "role": {
+              "value": "MASB_Team",
+              "formula": null,
+              "data_type": "text",
+              "is_empty": false,
+              "excel_error": null
+            },
+            "email": {
+              "value": "nizar.harun@mimos.my",
+              "formula": null,
+              "data_type": "text",
+              "is_empty": false,
+              "excel_error": null
+            },
+            "Defauls Password": {
+              "value": "masb.12345",
+              "formula": null,
+              "data_type": "text",
+              "is_empty": false,
+              "excel_error": null
+            }
+          }
+        },
+        {
+          "source_row_number": 10,
+          "cells": {
+            "Bil": {
+              "value": 9,
+              "formula": null,
+              "data_type": "integer",
+              "is_empty": false,
+              "excel_error": null
+            },
+            "staff_name": {
+              "value": "Farrah",
+              "formula": null,
+              "data_type": "text",
+              "is_empty": false,
+              "excel_error": null
+            },
+            "role": {
+              "value": "MASB_Team",
+              "formula": null,
+              "data_type": "text",
+              "is_empty": false,
+              "excel_error": null
+            },
+            "email": {
+              "value": "farrah.johar@mimos.my",
+              "formula": null,
+              "data_type": "text",
+              "is_empty": false,
+              "excel_error": null
+            },
+            "Defauls Password": {
+              "value": "masb.12345",
+              "formula": null,
+              "data_type": "text",
+              "is_empty": false,
+              "excel_error": null
+            }
+          }
+        },
+        {
+          "source_row_number": 11,
+          "cells": {
+            "Bil": {
+              "value": 10,
+              "formula": null,
+              "data_type": "integer",
+              "is_empty": false,
+              "excel_error": null
+            },
+            "staff_name": {
+              "value": "Sholihin",
+              "formula": null,
+              "data_type": "text",
+              "is_empty": false,
+              "excel_error": null
+            },
+            "role": {
+              "value": "MASB_Team",
+              "formula": null,
+              "data_type": "text",
+              "is_empty": false,
+              "excel_error": null
+            },
+            "email": {
+              "value": "sholihin.abdullah@mimos.my",
+              "formula": null,
+              "data_type": "text",
+              "is_empty": false,
+              "excel_error": null
+            },
+            "Defauls Password": {
+              "value": "masb.12345",
+              "formula": null,
+              "data_type": "text",
+              "is_empty": false,
+              "excel_error": null
+            }
+          }
+        },
+        {
+          "source_row_number": 12,
+          "cells": {
+            "Bil": {
+              "value": 11,
+              "formula": null,
+              "data_type": "integer",
+              "is_empty": false,
+              "excel_error": null
+            },
+            "staff_name": {
+              "value": "Dr. Afiq",
+              "formula": null,
+              "data_type": "text",
+              "is_empty": false,
+              "excel_error": null
+            },
+            "role": {
+              "value": "MASB_Team",
+              "formula": null,
+              "data_type": "text",
+              "is_empty": false,
+              "excel_error": null
+            },
+            "email": {
+              "value": "muhammadafiq.azmi@mimos.my",
+              "formula": null,
+              "data_type": "text",
+              "is_empty": false,
+              "excel_error": null
+            },
+            "Defauls Password": {
+              "value": "masb.12345",
+              "formula": null,
+              "data_type": "text",
+              "is_empty": false,
+              "excel_error": null
+            }
+          }
+        },
+        {
+          "source_row_number": 13,
+          "cells": {
+            "Bil": {
+              "value": 12,
+              "formula": null,
+              "data_type": "integer",
+              "is_empty": false,
+              "excel_error": null
+            },
+            "staff_name": {
+              "value": "Ainur Najwa",
+              "formula": null,
+              "data_type": "text",
+              "is_empty": false,
+              "excel_error": null
+            },
+            "role": {
+              "value": "MASB_Team",
+              "formula": null,
+              "data_type": "text",
+              "is_empty": false,
+              "excel_error": null
+            },
+            "email": {
+              "value": "ainur.rodzi@mimos.my",
+              "formula": null,
+              "data_type": "text",
+              "is_empty": false,
+              "excel_error": null
+            },
+            "Defauls Password": {
+              "value": "masb.12345",
+              "formula": null,
+              "data_type": "text",
+              "is_empty": false,
+              "excel_error": null
+            }
+          }
+        },
+        {
+          "source_row_number": 14,
+          "cells": {
+            "Bil": {
+              "value": 13,
+              "formula": null,
+              "data_type": "integer",
+              "is_empty": false,
+              "excel_error": null
+            },
+            "staff_name": {
+              "value": "Mohd Suhairi",
+              "formula": null,
+              "data_type": "text",
+              "is_empty": false,
+              "excel_error": null
+            },
+            "role": {
+              "value": "MASB_Team",
+              "formula": null,
+              "data_type": "text",
+              "is_empty": false,
+              "excel_error": null
+            },
+            "email": {
+              "value": "suhairi.soobni@mimos.my",
+              "formula": null,
+              "data_type": "text",
+              "is_empty": false,
+              "excel_error": null
+            },
+            "Defauls Password": {
+              "value": "masb.12345",
+              "formula": null,
+              "data_type": "text",
+              "is_empty": false,
+              "excel_error": null
+            }
+          }
+        },
+        {
+          "source_row_number": 15,
+          "cells": {
+            "Bil": {
+              "value": 14,
+              "formula": null,
+              "data_type": "integer",
+              "is_empty": false,
+              "excel_error": null
+            },
+            "staff_name": {
+              "value": "Omar",
+              "formula": null,
+              "data_type": "text",
+              "is_empty": false,
+              "excel_error": null
+            },
+            "role": {
+              "value": "MASB_Team",
+              "formula": null,
+              "data_type": "text",
+              "is_empty": false,
+              "excel_error": null
+            },
+            "email": {
+              "value": "omar.azmi@mimos.my",
+              "formula": null,
+              "data_type": "text",
+              "is_empty": false,
+              "excel_error": null
+            },
+            "Defauls Password": {
+              "value": "masb.12345",
+              "formula": null,
+              "data_type": "text",
+              "is_empty": false,
+              "excel_error": null
+            }
+          }
+        },
+        {
+          "source_row_number": 16,
+          "cells": {
+            "Bil": {
+              "value": 15,
+              "formula": null,
+              "data_type": "integer",
+              "is_empty": false,
+              "excel_error": null
+            },
+            "staff_name": {
+              "value": "Fatin Firzana",
+              "formula": null,
+              "data_type": "text",
+              "is_empty": false,
+              "excel_error": null
+            },
+            "role": {
+              "value": "MASB_Team",
+              "formula": null,
+              "data_type": "text",
+              "is_empty": false,
+              "excel_error": null
+            },
+            "email": {
+              "value": "fatin.pata@mimos.my",
+              "formula": null,
+              "data_type": "text",
+              "is_empty": false,
+              "excel_error": null
+            },
+            "Defauls Password": {
+              "value": "masb.12345",
+              "formula": null,
+              "data_type": "text",
+              "is_empty": false,
+              "excel_error": null
+            }
+          }
+        },
+        {
+          "source_row_number": 17,
+          "cells": {
+            "Bil": {
+              "value": 16,
+              "formula": null,
+              "data_type": "integer",
+              "is_empty": false,
+              "excel_error": null
+            },
+            "staff_name": {
+              "value": "Amalia Adriana",
+              "formula": null,
+              "data_type": "text",
+              "is_empty": false,
+              "excel_error": null
+            },
+            "role": {
+              "value": "MASB_Team",
+              "formula": null,
+              "data_type": "text",
+              "is_empty": false,
+              "excel_error": null
+            },
+            "email": {
+              "value": "amalia.rizam@mimos.my",
+              "formula": null,
+              "data_type": "text",
+              "is_empty": false,
+              "excel_error": null
+            },
+            "Defauls Password": {
+              "value": "masb.12345",
+              "formula": null,
+              "data_type": "text",
+              "is_empty": false,
+              "excel_error": null
+            }
+          }
+        },
+        {
+          "source_row_number": 18,
+          "cells": {
+            "Bil": {
+              "value": 17,
+              "formula": null,
+              "data_type": "integer",
+              "is_empty": false,
+              "excel_error": null
+            },
+            "staff_name": {
+              "value": "Nur Aleeya",
+              "formula": null,
+              "data_type": "text",
+              "is_empty": false,
+              "excel_error": null
+            },
+            "role": {
+              "value": "MASB_Team",
+              "formula": null,
+              "data_type": "text",
+              "is_empty": false,
+              "excel_error": null
+            },
+            "email": {
+              "value": "aleeya.amran@mimos.my",
+              "formula": null,
+              "data_type": "text",
+              "is_empty": false,
+              "excel_error": null
+            },
+            "Defauls Password": {
+              "value": "masb.12345",
+              "formula": null,
+              "data_type": "text",
+              "is_empty": false,
+              "excel_error": null
+            }
+          }
+        },
+        {
+          "source_row_number": 19,
+          "cells": {
+            "Bil": {
+              "value": 18,
+              "formula": null,
+              "data_type": "integer",
+              "is_empty": false,
+              "excel_error": null
+            },
+            "staff_name": {
+              "value": "Muhammad Yusuf",
+              "formula": null,
+              "data_type": "text",
+              "is_empty": false,
+              "excel_error": null
+            },
+            "role": {
+              "value": "MASB_Team",
+              "formula": null,
+              "data_type": "text",
+              "is_empty": false,
+              "excel_error": null
+            },
+            "email": {
+              "value": "yusuf.zolkipli@mimos.my",
+              "formula": null,
+              "data_type": "text",
+              "is_empty": false,
+              "excel_error": null
+            },
+            "Defauls Password": {
+              "value": "masb.12345",
+              "formula": null,
+              "data_type": "text",
+              "is_empty": false,
+              "excel_error": null
+            }
+          }
+        },
+        {
+          "source_row_number": 20,
+          "cells": {
+            "Bil": {
+              "value": 19,
+              "formula": null,
+              "data_type": "integer",
+              "is_empty": false,
+              "excel_error": null
+            },
+            "staff_name": {
+              "value": "Admin",
+              "formula": null,
+              "data_type": "text",
+              "is_empty": false,
+              "excel_error": null
+            },
+            "role": {
+              "value": "Super Admin",
+              "formula": null,
+              "data_type": "text",
+              "is_empty": false,
+              "excel_error": null
+            },
+            "email": {
+              "value": "saidrazak88@gmail.com",
+              "formula": null,
+              "data_type": "text",
+              "is_empty": false,
+              "excel_error": null
+            },
+            "Defauls Password": {
+              "value": "masb.12345",
+              "formula": null,
+              "data_type": "text",
+              "is_empty": false,
+              "excel_error": null
+            }
+          }
+        }
+      ],
+      "observations": []
+    }
+  ],
+  "integrity": {
+    "all_sheets_processed": true,
+    "all_rows_processed": true,
+    "all_columns_processed": true,
+    "formulas_preserved": true,
+    "errors_preserved": true,
+    "empty_cells_preserved": true,
+    "duplicates_preserved": true,
+    "data_cleaned": false,
+    "data_corrected": false,
+    "data_deduplicated": false,
+    "data_normalized": false,
+    "unextractable_items": []
+  },
+  "observations": []
+}
