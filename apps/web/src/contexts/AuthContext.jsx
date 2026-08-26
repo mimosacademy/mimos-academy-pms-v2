@@ -20,18 +20,22 @@ async function loadProfile(authUser) {
     .eq('auth_user_id', authUser.id)
     .maybeSingle();
   if (error) throw error;
-  const dbRole = staff?.staff_role?.code ?? authUser.user_metadata?.pms_role;
+
+  // Authorization must come from the database staff record, never user-controlled metadata.
+  if (!staff?.id || staff.is_active !== true || !staff.staff_role?.code) return null;
+
+  const dbRole = staff.staff_role.code;
   return {
     id: authUser.id,
-    staffId: staff?.id ?? null,
-    email: authUser.email ?? staff?.email ?? '',
-    name: staff?.full_name ?? authUser.user_metadata?.full_name ?? authUser.email ?? '',
+    staffId: staff.id,
+    email: authUser.email ?? staff.email ?? '',
+    name: staff.full_name ?? authUser.email ?? '',
     role: mapDbRoleToUiRole(dbRole),
-    roleName: staff?.staff_role?.name ?? 'Viewer',
-    dbRole: String(dbRole || 'VIEWER').toUpperCase(),
+    roleName: staff.staff_role.name ?? 'Viewer',
+    dbRole: String(dbRole).toUpperCase(),
     verified: Boolean(authUser.email_confirmed_at),
     lastLogin: authUser.last_sign_in_at ?? null,
-    isActive: staff?.is_active !== false,
+    isActive: true,
   };
 }
 
@@ -56,6 +60,12 @@ export const AuthProvider = ({ children }) => {
     login: async (email, password) => {
       const { data, error } = await supabase.auth.signInWithPassword({ email: email.trim(), password });
       if (error) throw error;
+      // Session is not considered an application login until an active DB staff record exists.
+      const profile = await loadProfile(data?.user ?? null);
+      if (!profile) {
+        await supabase.auth.signOut();
+        throw new Error('Your account is not provisioned as an active PMS staff user.');
+      }
       return data;
     },
     logout: async () => {
