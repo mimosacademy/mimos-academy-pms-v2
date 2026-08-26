@@ -18,12 +18,11 @@ export const decimalAdd = (...values) => {
     scale = Math.max(scale, fraction.length);
   }
 
-  const factor = 10n ** BigInt(scale);
-  const total = normalized.reduce((sum, value) => {
+  let total = normalized.reduce((sum, value) => {
     const negative = value.startsWith('-');
     const unsigned = negative ? value.slice(1) : value;
     const [whole, fraction = ''] = unsigned.split('.');
-    const units = BigInt(`${whole}${fraction.padEnd(scale, '0') || '0'}`) * (factor / (10n ** BigInt(scale)));
+    const units = BigInt(`${whole}${fraction.padEnd(scale, '0') || '0'}`);
     return sum + (negative ? -units : units);
   }, 0n);
 
@@ -89,11 +88,70 @@ export const slugify = (text) =>
 export const formatRM = (amount) =>
   `RM ${decimalToNumberForDisplay(amount).toLocaleString('en-MY', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 
+const decimalRoundToScale = (value, scale) => {
+  const normalized = decimalToString(value);
+  const negative = normalized.startsWith('-');
+  const unsigned = negative ? normalized.slice(1) : normalized;
+  const [whole, fraction = ''] = unsigned.split('.');
+  const padded = fraction.padEnd(scale + 1, '0');
+  const retained = padded.slice(0, scale);
+  const nextDigit = padded[scale] || '0';
+  let units = BigInt(`${whole}${retained}` || '0');
+
+  if (nextDigit >= '5') units += 1n;
+
+  const digits = units.toString().padStart(scale + 1, '0');
+  if (scale === 0) return `${negative ? '-' : ''}${digits}`;
+  return `${negative ? '-' : ''}${digits.slice(0, -scale) || '0'}.${digits.slice(-scale)}`;
+};
+
+const decimalIntegerPart = (value) => {
+  const normalized = decimalToString(value);
+  const unsigned = normalized.startsWith('-') ? normalized.slice(1) : normalized;
+  return BigInt(unsigned.split('.')[0] || '0');
+};
+
 export const formatRMCompact = (amount) => {
-  const v = decimalToNumberForDisplay(amount);
-  if (Math.abs(v) >= 1_000_000) return `RM ${(v / 1_000_000).toFixed(2)}M`;
-  if (Math.abs(v) >= 1_000) return `RM ${(v / 1_000).toFixed(1)}K`;
-  return formatRM(amount);
+  const normalized = decimalToString(amount);
+  const absoluteInteger = decimalIntegerPart(normalized);
+  const million = 1_000_000n;
+  const thousand = 1_000n;
+
+  if (absoluteInteger >= million) {
+    const scaled = decimalRoundToScale(decimalDivideByInteger(normalized, million), 2);
+    return `RM ${scaled}M`;
+  }
+
+  if (absoluteInteger >= thousand) {
+    const scaled = decimalRoundToScale(decimalDivideByInteger(normalized, thousand), 1);
+    return `RM ${scaled}K`;
+  }
+
+  return formatRM(normalized);
+};
+
+const decimalDivideByInteger = (value, divisor) => {
+  const normalized = decimalToString(value);
+  const negative = normalized.startsWith('-');
+  const unsigned = negative ? normalized.slice(1) : normalized;
+  const [whole, fraction = ''] = unsigned.split('.');
+  const sourceScale = fraction.length;
+  const numerator = BigInt(`${whole}${fraction}` || '0');
+  const quotient = numerator / BigInt(divisor);
+  const remainder = numerator % BigInt(divisor);
+
+  if (sourceScale === 0) {
+    const result = quotient.toString();
+    return `${negative ? '-' : ''}${result}`;
+  }
+
+  const quotientText = quotient.toString().padStart(sourceScale + 1, '0');
+  const base = `${quotientText.slice(0, -sourceScale) || '0'}.${quotientText.slice(-sourceScale)}`;
+
+  if (remainder === 0n) return `${negative ? '-' : ''}${base}`;
+
+  const extraFraction = remainder.toString().padStart(String(divisor).length - 1, '0');
+  return `${negative ? '-' : ''}${base}${extraFraction}`;
 };
 
 export const isOverdue = (dueDate, status) =>
