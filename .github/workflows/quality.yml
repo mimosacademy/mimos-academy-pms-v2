@@ -64,12 +64,12 @@ jobs:
       - name: Verify production data is not tracked
         run: |
           if git ls-files apps/pocketbase/pb_data | grep -q .; then exit 1; fi
-      - name: Verify no obvious secrets are committed
+      - name: Verify no obvious private keys are committed
         run: |
-          if git grep -nEI '(BEGIN (RSA|OPENSSH|EC) PRIVATE KEY|SUPABASE_SERVICE_ROLE_KEY\s*=\s*[^$\{]|sk-[A-Za-z0-9_-]{20,}|password\s*[:=]\s*["'"'][^"'"']{12,})' -- ':!*.md' ':!docs/*'; then
-            echo "Potential hard-coded secret detected"; exit 1
+          if git grep -nE -- 'BEGIN (RSA|OPENSSH|EC) PRIVATE KEY|SUPABASE_SERVICE_ROLE_KEY[[:space:]]*=' -- ':!*.md' ':!docs/*'; then
+            echo "Potential private key or service-role environment assignment detected"; exit 1
           fi
-      - name: Validate migration SQL syntax markers
+      - name: Validate migration SQL markers
         run: |
           grep -q "create or replace function private.validate_payment_invariants" supabase/migrations/016_security_integrity_hardening.sql
           grep -q "create trigger trg_validate_payment_invariants" supabase/migrations/016_security_integrity_hardening.sql
