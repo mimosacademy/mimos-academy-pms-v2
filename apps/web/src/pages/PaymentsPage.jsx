@@ -6,7 +6,7 @@ import StatCard from '@/components/StatCard';
 import DataTable from '@/components/DataTable';
 import StatusBadge from '@/components/StatusBadge';
 import { usePmsData } from '@/contexts/PmsDataContext';
-import { formatDate, formatRM, formatRMCompact } from '@/lib/format';
+import { formatDate, formatRM, formatRMCompact, decimalAdd } from '@/lib/format';
 import { CreditCard, HandCoins, Hourglass, Receipt } from 'lucide-react';
 
 export default function PaymentsPage() {
@@ -16,11 +16,11 @@ export default function PaymentsPage() {
 
   const completed = payments.filter((p) => p.status === 'Completed');
   const pending = payments.filter((p) => p.status === 'Pending');
-  const collectedTotal = completed.reduce((s, p) => s + Number(p.amount || 0), 0);
-  const pendingTotal = pending.reduce((s, p) => s + Number(p.amount || 0), 0);
+  const collectedTotal = completed.reduce((s, p) => decimalAdd(s, p.amount), '0');
+  const pendingTotal = pending.reduce((s, p) => decimalAdd(s, p.amount), '0');
   const thisMonth = completed
     .filter((p) => p.date?.startsWith(currentMonth))
-    .reduce((s, p) => s + Number(p.amount || 0), 0);
+    .reduce((s, p) => decimalAdd(s, p.amount), '0');
 
   const monthLabel = now.toLocaleString('en-MY', { month: 'short' });
 
