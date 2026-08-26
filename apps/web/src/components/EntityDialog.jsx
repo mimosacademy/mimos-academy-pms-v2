@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { toast } from 'sonner';
-import { Plus } from 'lucide-react';
+import { Pencil, Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -20,25 +20,30 @@ const normalizeDecimalInput = (value) => {
   return decimalToString(text);
 };
 
-export default function EntityDialog({ collection, title, description, triggerLabel, fields, initialValues = {}, onCreated }) {
-  const { createRecord, clients, programmes, quotations, opportunities, invoices } = usePmsData();
+export default function EntityDialog({
+  collection,
+  title,
+  description,
+  triggerLabel,
+  fields,
+  initialValues = {},
+  onCreated,
+  mode = 'create',
+  recordId = null,
+}) {
+  const { createRecord, updateRecord } = usePmsData();
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState(initialValues);
+  const [saving, setSaving] = useState(false);
 
-  useEffect(() => { if (open) setForm(initialValues); }, [open, JSON.stringify(initialValues)]);
-
-  const relationOptions = (field) => {
-    if (field.options) return field.options;
-    if (field.relation === 'clients') return clients.map((x) => ({ value: x.id, label: x.name }));
-    if (field.relation === 'programmes') return programmes.map((x) => ({ value: x.id, label: `${x.code} — ${x.title}` }));
-    if (field.relation === 'quotations') return quotations.map((x) => ({ value: x.id, label: x.quoteNo }));
-    if (field.relation === 'opportunities') return opportunities.map((x) => ({ value: x.id, label: x.title }));
-    if (field.relation === 'invoices') return invoices.map((x) => ({ value: x.id, label: x.invoiceNo }));
-    return [];
-  };
+  useEffect(() => {
+    if (open) setForm(initialValues || {});
+  }, [open, initialValues]);
 
   const submit = async (e) => {
     e.preventDefault();
+    if (saving) return;
+    setSaving(true);
     try {
       const payload = {};
       fields.forEach((f) => {
@@ -47,43 +52,57 @@ export default function EntityDialog({ collection, title, description, triggerLa
         if (f.type === 'relation' && value === 'none') value = '';
         if (value !== undefined) payload[f.name] = value;
       });
-      await createRecord(collection, payload);
-      toast.success(`${title} created successfully.`);
+      if (mode === 'edit') {
+        if (!recordId) throw new Error('Cannot update this record because its ID is missing.');
+        await updateRecord(collection, recordId, payload);
+        toast.success(`${title} updated successfully.`);
+      } else {
+        await createRecord(collection, payload);
+        toast.success(`${title} created successfully.`);
+      }
       setOpen(false);
       onCreated?.();
     } catch (error) {
-      toast.error(error?.message || `Unable to create ${title.toLowerCase()}.`);
+      console.error(`[PMS] ${mode} ${collection} failed`, error);
+      toast.error(error?.message || `Unable to ${mode === 'edit' ? 'update' : 'create'} ${title.toLowerCase()}.`);
+    } finally {
+      setSaving(false);
     }
   };
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button className="bg-violet-600 hover:bg-violet-700">
-          <Plus className="mr-2 h-4 w-4" /> {triggerLabel || `New ${title}`}
+        <Button variant={mode === 'edit' ? 'ghost' : undefined} size={mode === 'edit' ? 'icon' : undefined} className={mode === 'edit' ? 'h-8 w-8' : 'bg-violet-600 hover:bg-violet-700'} title={mode === 'edit' ? `Edit ${title}` : undefined}>
+          {mode === 'edit' ? <Pencil className="h-4 w-4" /> : <><Plus className="mr-2 h-4 w-4" /> {triggerLabel || `New ${title}`}</>}
         </Button>
       </DialogTrigger>
       <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-2xl">
         <DialogHeader>
-          <DialogTitle>{title}</DialogTitle>
+          <DialogTitle>{mode === 'edit' ? `Edit ${title}` : title}</DialogTitle>
           <DialogDescription>{description}</DialogDescription>
         </DialogHeader>
         <form onSubmit={submit} className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           {fields.map((f) => {
-            const options = relationOptions(f);
+            const options = f.options || [];
             return (
               <div key={f.name} className={`space-y-2 ${f.full ? 'sm:col-span-2' : ''}`}>
-                <Label>{f.label}</Label>
+                <Label htmlFor={`${collection}-${f.name}`}>{f.label}</Label>
                 {f.type === 'select' || f.type === 'relation' ? (
                   <Select value={form[f.name] || 'none'} onValueChange={(v) => setForm((s) => ({ ...s, [f.name]: v === 'none' ? '' : v }))}>
-                    <SelectTrigger><SelectValue placeholder={`Select ${f.label}`} /></SelectTrigger>
+                    <SelectTrigger id={`${collection}-${f.name}`}><SelectValue placeholder={`Select ${f.label}`} /></SelectTrigger>
                     <SelectContent>
                       {!f.required && <SelectItem value="none">— None —</SelectItem>}
-                      {options.map((o) => <SelectItem key={o.value} value={o.value}>{o.label ?? o.value}</SelectItem>)}
+                      {options.map((o) => {
+                        const value = typeof o === 'string' ? o : o.value;
+                        const label = typeof o === 'string' ? o : (o.label ?? o.value);
+                        return <SelectItem key={value} value={value}>{label}</SelectItem>;
+                      })}
                     </SelectContent>
                   </Select>
                 ) : (
                   <Input
+                    id={`${collection}-${f.name}`}
                     type={f.type || 'text'}
                     required={!!f.required}
                     min={f.min}
@@ -98,8 +117,8 @@ export default function EntityDialog({ collection, title, description, triggerLa
             );
           })}
           <DialogFooter className="sm:col-span-2">
-            <Button type="button" variant="outline" onClick={() => setOpen(false)}>Cancel</Button>
-            <Button type="submit" className="bg-violet-600 hover:bg-violet-700">Create</Button>
+            <Button type="button" variant="outline" onClick={() => setOpen(false)} disabled={saving}>Cancel</Button>
+            <Button type="submit" className="bg-violet-600 hover:bg-violet-700" disabled={saving}>{saving ? 'Saving…' : mode === 'edit' ? 'Save Changes' : 'Create'}</Button>
           </DialogFooter>
         </form>
       </DialogContent>
