@@ -23,20 +23,24 @@ Never put `SUPABASE_SERVICE_ROLE_KEY` in browser/Vite environment variables.
 
 ## 3. Database migrations
 
-Apply Supabase migrations in filename order. The remediation migration is:
+Apply Supabase migrations in filename order. The security remediation migration is:
 
 ```text
-supabase/migrations/015_security_integrity_hardening.sql
+supabase/migrations/016_security_integrity_hardening.sql
 ```
 
-Before applying it to production:
+Migration `015_migration_function_security.sql` remains authoritative for staging promotion and keeps `promote_stg_*` functions service-role-only.
+
+Before applying `016_security_integrity_hardening.sql` to production:
 
 1. Export/backup the current database.
 2. Apply the migration in a disposable/staging project first.
-3. Test each role in the role matrix.
-4. Test invoice/payment creation, overpayment rejection and allocation limits.
-5. Test Storage access with two different programme IDs.
-6. Only then apply to production.
+3. Verify the migration completes without SQL errors.
+4. Test each role in the role matrix.
+5. Test invoice/payment creation, overpayment rejection and allocation limits.
+6. Test Storage access with two different programme IDs.
+7. Run Supabase security advisors and resolve any new high/critical findings.
+8. Only then apply to production.
 
 Never edit an already-applied migration. Add a new forward migration.
 
@@ -53,6 +57,7 @@ Minimum production roles:
 - MASB_TEAM
 - PIC
 - TRAINER
+- VIEWER
 
 Do not rely on hidden React menus for authorization. PostgreSQL RLS is the security boundary.
 
@@ -61,9 +66,9 @@ Do not rely on hidden React menus for authorization. PostgreSQL RLS is the secur
 From Supabase SQL Editor and controlled test accounts, verify:
 
 - Viewer cannot read `invoice`, `payment`, or `invoice_payment_allocation`.
-- PIC/Trainer can only access programme-scoped records permitted by their programme ownership/assignment.
+- PIC/Trainer can only access programme-scoped records permitted by their programme assignment.
 - Finance can access financial records.
-- Generic authenticated users cannot execute privileged staging promotion without the function's role check.
+- Authenticated users cannot execute staging promotion functions; those functions are service-role-only.
 - Audit records cannot be updated/deleted by application roles.
 - Views used by dashboards enforce underlying RLS.
 - Storage objects under `programmes/{programme_id}/...` cannot be read across programmes.
