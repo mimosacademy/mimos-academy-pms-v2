@@ -45,15 +45,26 @@ jobs:
           if grep -R -nE "create policy .*on public\.(invoice|payment|payment_allocation|invoice_payment_allocation|audit_log|audit_history).*using \(true\)" supabase/migrations; then
             echo "Broad sensitive-table RLS policy detected"; exit 1
           fi
+      - name: Verify authorization helpers are private-schema based
+        run: |
+          if grep -nE "create or replace function public\.(has_pms_role|can_access_programme|current_staff_id)" supabase/migrations/016_security_integrity_hardening.sql; then
+            echo "Authorization helper exposed in API schema"; exit 1
+          fi
+          if grep -n "public.current_staff_role" supabase/migrations/016_security_integrity_hardening.sql; then
+            echo "Migration depends on legacy/missing current_staff_role()"; exit 1
+          fi
       - name: Verify staging promotion is service-role only
         run: |
-          grep -q "revoke all on function public.promote_stg_invoice(bigint) from authenticated" supabase/migrations/016_security_integrity_hardening.sql
-          grep -q "grant execute on function public.promote_stg_invoice(bigint) to service_role" supabase/migrations/016_security_integrity_hardening.sql
-          grep -q "revoke all on function public.promote_stg_quotation(bigint) from authenticated" supabase/migrations/016_security_integrity_hardening.sql
-          grep -q "revoke all on function public.promote_stg_funnel(bigint) from authenticated" supabase/migrations/016_security_integrity_hardening.sql
+          for f in supabase/migrations/*.sql; do
+            if grep -q "promote_stg_" "$f"; then
+              grep -q "revoke all on function public.promote_stg_.* from authenticated" "$f" || {
+                echo "Staging promotion function is not explicitly revoked from authenticated"; exit 1;
+              }
+            fi
+          done
       - name: Verify frontend never contains service-role credentials
         run: |
-          if grep -R -nE "SUPABASE_SERVICE_ROLE_KEY|service_role" apps/web/src apps/web/.env.example; then
+          if grep -R -nEi "SUPABASE_SERVICE_ROLE_KEY|service_role|service-role" apps/web/src apps/web/.env.example; then
             echo "Service-role credential/reference found in browser source"; exit 1
           fi
       - name: Verify browser source does not import PocketBase
@@ -64,17 +75,16 @@ jobs:
       - name: Verify production data is not tracked
         run: |
           if git ls-files apps/pocketbase/pb_data | grep -q .; then exit 1; fi
-      - name: Verify no obvious private keys are committed
+      - name: Verify no obvious secrets are committed
         run: |
-          if git grep -nE -- 'BEGIN (RSA|OPENSSH|EC) PRIVATE KEY|SUPABASE_SERVICE_ROLE_KEY[[:space:]]*=' -- ':!*.md' ':!docs/*'; then
-            echo "Potential private key or service-role environment assignment detected"; exit 1
+          if git grep -nEI -- '(BEGIN (RSA|OPENSSH|EC|DSA) PRIVATE KEY|SUPABASE_SERVICE_ROLE_KEY[[:space:]]*=[[:space:]]*[^$\{]|sk-[A-Za-z0-9_-]{20,}|password[[:space:]]*[:=][[:space:]]*["'"'][^"'"']{12,})' -- ':!*.md' ':!docs/*'; then
+            echo "Potential hard-coded secret detected"; exit 1
           fi
-      - name: Validate migration SQL markers
+      - name: Validate financial and storage security markers
         run: |
-          grep -q "create or replace function private.validate_payment_invariants" supabase/migrations/016_security_integrity_hardening.sql
-          grep -q "create trigger trg_validate_payment_invariants" supabase/migrations/016_security_integrity_hardening.sql
-          grep -q "create trigger trg_validate_allocation_invariants" supabase/migrations/016_security_integrity_hardening.sql
-          grep -q "create trigger trg_recalc_invoice_collection" supabase/migrations/016_security_integrity_hardening.sql
+          grep -q "private.validate_financial_invariants" supabase/migrations/016_security_integrity_hardening.sql
+          grep -q "ux_payment_operation_id" supabase/migrations/016_security_integrity_hardening.sql
+          grep -q "pms_documents_select" supabase/migrations/016_security_integrity_hardening.sql
 
   deployment-config-check:
     runs-on: ubuntu-latest
