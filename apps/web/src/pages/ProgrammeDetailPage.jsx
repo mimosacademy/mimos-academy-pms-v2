@@ -1,91 +1,46 @@
 import React, { useMemo } from 'react';
 import { Helmet } from 'react-helmet';
 import { Link, useParams } from 'react-router-dom';
-import { ArrowLeft, CalendarRange, CheckCircle2, CreditCard, FileText, FolderOpen, GraduationCap, Receipt, Users } from 'lucide-react';
+import { ArrowLeft, CheckCircle2, FileText, GraduationCap } from 'lucide-react';
 import StatusBadge from '@/components/StatusBadge';
 import { Button } from '@/components/ui/button';
 import { usePmsData } from '@/contexts/PmsDataContext';
-import { formatDate, formatRM } from '@/lib/format';
+import { formatDate, formatRM, decimalAdd, decimalCompare, decimalSubtract } from '@/lib/format';
 
-function Metric({ label, value }) {
-  return <div className="rounded-xl border bg-white p-4"><p className="text-xs font-medium uppercase tracking-wide text-slate-500">{label}</p><p className="mt-1 text-xl font-bold text-slate-900">{value}</p></div>;
-}
-
-function DataTable({ headers, rows, empty }) {
-  if (!rows.length) return <p className="py-8 text-center text-sm text-slate-400">{empty}</p>;
-  return <div className="overflow-x-auto"><table className="w-full text-sm"><thead className="border-b bg-slate-50"><tr>{headers.map((header) => <th key={header} className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">{header}</th>)}</tr></thead><tbody className="divide-y">{rows.map((row, index) => <tr key={index} className="hover:bg-slate-50/60">{row}</tr>)}</tbody></table></div>;
-}
-
-function Section({ title, children }) {
-  return <section className="overflow-hidden rounded-xl border bg-white shadow-sm"><header className="border-b px-5 py-4"><h2 className="text-sm font-bold uppercase tracking-wide text-slate-700">{title}</h2></header><div className="p-5">{children}</div></section>;
-}
+function Metric({ label, value }) { return <div className="rounded-xl border bg-white p-4"><p className="text-xs font-medium uppercase tracking-wide text-slate-500">{label}</p><p className="mt-1 text-xl font-bold text-slate-900">{value}</p></div>; }
+function DataTable({ headers, rows, empty }) { if (!rows.length) return <p className="py-8 text-center text-sm text-slate-400">{empty}</p>; return <div className="overflow-x-auto"><table className="w-full text-sm"><thead className="border-b bg-slate-50"><tr>{headers.map((header) => <th key={header} className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">{header}</th>)}</tr></thead><tbody className="divide-y">{rows.map((row, index) => <tr key={index} className="hover:bg-slate-50/60">{row}</tr>)}</tbody></table></div>; }
+function Section({ title, children }) { return <section className="overflow-hidden rounded-xl border bg-white shadow-sm"><header className="border-b px-5 py-4"><h2 className="text-sm font-bold uppercase tracking-wide text-slate-700">{title}</h2></header><div className="p-5">{children}</div></section>; }
 
 export default function ProgrammeDetailPage() {
   const { id } = useParams();
   const { actionItems = [], auditHistory = [], clientContacts = [], clients = [], documents = [], invoices = [], payments = [], participants = [], programmes = [], purchaseOrders = [], quotations = [], trainingSessions = [], trainingStatistics = [] } = usePmsData();
   const programme = programmes.find((item) => item.id === id);
-
   const data = useMemo(() => {
     if (!programme) return null;
     const client = clients.find((item) => item.id === programme.client) ?? null;
-    const quotes = quotations.filter((item) => item.programmeId === programme.id);
-    const pos = purchaseOrders.filter((item) => item.programmeId === programme.id);
-    const invs = invoices.filter((item) => item.programmeId === programme.id);
-    const pays = payments.filter((item) => item.programmeId === programme.id);
-    const sessions = trainingSessions.filter((item) => item.programmeId === programme.id);
-    const pax = participants.filter((item) => item.programmeId === programme.id);
-    const actions = actionItems.filter((item) => item.programmeId === programme.id);
-    const docs = documents.filter((item) => item.programmeId === programme.id);
-    const audit = auditHistory.filter((item) => item.programmeId === programme.id);
-    const stats = trainingStatistics.find((item) => item.programmeId === programme.id) ?? null;
-    const contacts = clientContacts.filter((item) => item.client === programme.client);
-    return { client, contacts, quotes, pos, invs, pays, sessions, pax, actions, docs, audit, stats };
+    return { client, contacts: clientContacts.filter((item) => item.client === programme.client), quotes: quotations.filter((item) => item.programmeId === programme.id), pos: purchaseOrders.filter((item) => item.programmeId === programme.id), invs: invoices.filter((item) => item.programmeId === programme.id), pays: payments.filter((item) => item.programmeId === programme.id), sessions: trainingSessions.filter((item) => item.programmeId === programme.id), pax: participants.filter((item) => item.programmeId === programme.id), actions: actionItems.filter((item) => item.programmeId === programme.id), docs: documents.filter((item) => item.programmeId === programme.id), audit: auditHistory.filter((item) => item.programmeId === programme.id), stats: trainingStatistics.find((item) => item.programmeId === programme.id) ?? null };
   }, [programme, clients, clientContacts, quotations, purchaseOrders, invoices, payments, trainingSessions, participants, actionItems, documents, auditHistory, trainingStatistics]);
-
   if (!programme || !data) return <div className="flex min-h-[60vh] flex-col items-center justify-center text-center"><GraduationCap className="h-10 w-10 text-slate-300" /><h2 className="mt-4 text-xl font-bold text-slate-900">Programme not found</h2><p className="mt-2 text-sm text-slate-500">The programme does not exist or has been removed.</p><Button asChild className="mt-6 bg-violet-600 hover:bg-violet-700"><Link to="/programmes">Back to Programmes</Link></Button></div>;
 
-  const invoiced = data.invs.reduce((sum, item) => sum + Number(item.amount || item.totalAmount || 0), 0);
-  const collected = data.pays.filter((item) => item.status === 'Completed').reduce((sum, item) => sum + Number(item.amount || 0), 0);
-  const outstanding = Math.max(0, invoiced - collected);
+  const invoiced = data.invs.reduce((total, item) => decimalAdd(total, item.amount || item.totalAmount), '0.00');
+  const collected = data.pays.filter((item) => item.status === 'Completed').reduce((total, item) => decimalAdd(total, item.amount), '0.00');
+  const calculatedOutstanding = decimalSubtract(invoiced, collected);
+  const outstanding = decimalCompare(calculatedOutstanding, '0') < 0 ? '0.00' : calculatedOutstanding;
   const completedSessions = data.sessions.filter((item) => item.status === 'Completed').length;
-  const flow = [
-    ['Opportunity', Boolean(programme.opportunityId)],
-    ['Quotation', data.quotes.length > 0],
-    ['Purchase Order', data.pos.length > 0],
-    ['Programme', true],
-    ['Training Delivery', data.sessions.length > 0],
-    ['Invoice', data.invs.length > 0],
-    ['Payment Collection', data.pays.length > 0],
-  ];
+  const flow = [['Opportunity', Boolean(programme.opportunityId)], ['Quotation', data.quotes.length > 0], ['Purchase Order', data.pos.length > 0], ['Programme', true], ['Training Delivery', data.sessions.length > 0], ['Invoice', data.invs.length > 0], ['Payment Collection', data.pays.length > 0]];
 
   return <div className="space-y-6">
     <Helmet><title>{programme.code} — Programme · MIMOS Academy PMS</title><meta name="description" content={`${programme.title} programme detail`} /></Helmet>
-    <div className="flex flex-wrap items-center justify-between gap-3">
-      <div><Button asChild variant="ghost" className="mb-2 px-0 text-violet-700 hover:bg-transparent"><Link to="/programmes"><ArrowLeft className="mr-2 h-4 w-4" /> Back to Programmes</Link></Button><h1 className="text-2xl font-bold text-slate-900">{programme.title}</h1><p className="mt-1 text-sm text-slate-500">{programme.code} · {programme.clientName || data.client?.name || 'Unassigned client'}</p></div>
-      <StatusBadge status={programme.status} />
-    </div>
-
-    <div className="grid grid-cols-2 gap-4 lg:grid-cols-5"><Metric label="Contract Value" value={formatRM(Number(programme.value || programme.totalValue || 0))} /><Metric label="Invoiced" value={formatRM(invoiced)} /><Metric label="Collected" value={formatRM(collected)} /><Metric label="Outstanding" value={formatRM(outstanding)} /><Metric label="Sessions" value={`${completedSessions}/${data.sessions.length}`} /></div>
-
+    <div className="flex flex-wrap items-center justify-between gap-3"><div><Button asChild variant="ghost" className="mb-2 px-0 text-violet-700 hover:bg-transparent"><Link to="/programmes"><ArrowLeft className="mr-2 h-4 w-4" /> Back to Programmes</Link></Button><h1 className="text-2xl font-bold text-slate-900">{programme.title}</h1><p className="mt-1 text-sm text-slate-500">{programme.code} · {programme.clientName || data.client?.name || 'Unassigned client'}</p></div><StatusBadge status={programme.status} /></div>
+    <div className="grid grid-cols-2 gap-4 lg:grid-cols-5"><Metric label="Contract Value" value={formatRM(programme.contractValue)} /><Metric label="Invoiced" value={formatRM(invoiced)} /><Metric label="Collected" value={formatRM(collected)} /><Metric label="Outstanding" value={formatRM(outstanding)} /><Metric label="Sessions" value={`${completedSessions}/${data.sessions.length}`} /></div>
     <Section title="Business Flow"><div className="flex flex-wrap items-center gap-3">{flow.map(([label, active], index) => <React.Fragment key={label}><div className="flex items-center gap-2 rounded-lg border px-3 py-2"><CheckCircle2 className={`h-4 w-4 ${active ? 'text-emerald-600' : 'text-slate-300'}`} /><span className={`text-xs font-medium ${active ? 'text-slate-800' : 'text-slate-400'}`}>{label}</span></div>{index < flow.length - 1 && <span className="text-slate-300">→</span>}</React.Fragment>)}</div></Section>
-
-    <div className="grid gap-6 lg:grid-cols-2">
-      <Section title="Client"><div className="space-y-2 text-sm">{data.client ? <><p className="font-semibold text-slate-900">{data.client.name}</p><p className="text-slate-600">{data.client.industry || '—'}</p><p className="text-slate-600">{data.client.email || '—'}</p><p className="text-slate-600">{data.client.phone || '—'}</p><StatusBadge status={data.client.status} /></> : <p className="text-slate-400">No client linked.</p>}</div></Section>
-      <Section title="Training Statistics"><div className="grid grid-cols-2 gap-3">{data.stats ? <><Metric label="Planned" value={data.stats.sessionsPlanned ?? 0} /><Metric label="Delivered" value={data.stats.sessionsDelivered ?? 0} /><Metric label="Attendance" value={`${data.stats.attendanceRate ?? 0}%`} /><Metric label="NPS" value={data.stats.npsScore ?? '—'} /></> : <p className="col-span-2 py-6 text-center text-sm text-slate-400">No training statistics recorded.</p>}</div></Section>
-    </div>
-
-    <Section title={`Quotations (${data.quotes.length})`}><DataTable headers={['Quote No', 'Amount', 'Status', 'Issued', 'Valid Until']} empty="No quotations linked to this programme." rows={data.quotes.map((item) => [<td key="n" className="px-4 py-3 font-medium text-violet-700">{item.quoteNo}</td>, <td key="a" className="px-4 py-3">{formatRM(Number(item.amount || 0))}</td>, <td key="s" className="px-4 py-3"><StatusBadge status={item.status} /></td>, <td key="i" className="px-4 py-3">{formatDate(item.issueDate)}</td>, <td key="v" className="px-4 py-3">{formatDate(item.validUntil)}</td>])} /></Section>
-    <Section title={`Purchase Orders (${data.pos.length})`}><DataTable headers={['PO No', 'Amount', 'Status', 'Issued', 'Received']} empty="No purchase orders linked to this programme." rows={data.pos.map((item) => [<td key="n" className="px-4 py-3 font-medium text-violet-700">{item.poNo}</td>, <td key="a" className="px-4 py-3">{formatRM(Number(item.amount || 0))}</td>, <td key="s" className="px-4 py-3"><StatusBadge status={item.status} /></td>, <td key="i" className="px-4 py-3">{formatDate(item.issueDate)}</td>, <td key="r" className="px-4 py-3">{item.receivedDate ? formatDate(item.receivedDate) : 'Pending'}</td>])} /></Section>
-    <Section title={`Invoices (${data.invs.length})`}><DataTable headers={['Invoice No', 'Description', 'Amount', 'Paid', 'Due Date', 'Status']} empty="No invoices linked to this programme." rows={data.invs.map((item) => [<td key="n" className="px-4 py-3 font-medium text-violet-700">{item.invoiceNo}</td>, <td key="d" className="px-4 py-3">{item.description || '—'}</td>, <td key="a" className="px-4 py-3">{formatRM(Number(item.amount || item.totalAmount || 0))}</td>, <td key="p" className="px-4 py-3">{formatRM(Number(item.paidAmount || 0))}</td>, <td key="du" className="px-4 py-3">{formatDate(item.dueDate)}</td>, <td key="s" className="px-4 py-3"><StatusBadge status={item.status} /></td>])} /></Section>
-    <Section title={`Payments (${data.pays.length})`}><DataTable headers={['Payment No', 'Invoice', 'Amount', 'Method', 'Date', 'Reference', 'Status']} empty="No payments linked to this programme." rows={data.pays.map((item) => [<td key="n" className="px-4 py-3 font-medium text-violet-700">{item.paymentNo}</td>, <td key="i" className="px-4 py-3">{item.invoiceNo || '—'}</td>, <td key="a" className="px-4 py-3">{formatRM(Number(item.amount || 0))}</td>, <td key="m" className="px-4 py-3">{item.method || '—'}</td>, <td key="d" className="px-4 py-3">{formatDate(item.date)}</td>, <td key="r" className="px-4 py-3 font-mono text-xs">{item.reference || '—'}</td>, <td key="s" className="px-4 py-3"><StatusBadge status={item.status} /></td>])} /></Section>
-
-    <div className="grid gap-6 lg:grid-cols-2">
-      <Section title={`Training Sessions (${data.sessions.length})`}><DataTable headers={['Session', 'Date', 'Trainer', 'Mode', 'Status']} empty="No training sessions scheduled." rows={data.sessions.map((item) => [<td key="t" className="px-4 py-3 font-medium">{item.title}</td>, <td key="d" className="px-4 py-3">{formatDate(item.date)}</td>, <td key="tr" className="px-4 py-3">{item.trainer || '—'}</td>, <td key="m" className="px-4 py-3">{item.mode || '—'}</td>, <td key="s" className="px-4 py-3"><StatusBadge status={item.status} /></td>])} /></Section>
-      <Section title={`Participants (${data.pax.length})`}><DataTable headers={['Name', 'Email', 'Phone', 'Status']} empty="No participants enrolled." rows={data.pax.map((item) => [<td key="n" className="px-4 py-3 font-medium">{item.name}</td>, <td key="e" className="px-4 py-3">{item.email || '—'}</td>, <td key="p" className="px-4 py-3">{item.phone || '—'}</td>, <td key="s" className="px-4 py-3"><StatusBadge status={item.status} /></td>])} /></Section>
-    </div>
-
+    <div className="grid gap-6 lg:grid-cols-2"><Section title="Client"><div className="space-y-2 text-sm">{data.client ? <><p className="font-semibold text-slate-900">{data.client.name}</p><p className="text-slate-600">{data.client.industry || '—'}</p><p className="text-slate-600">{data.client.email || '—'}</p><p className="text-slate-600">{data.client.phone || '—'}</p><StatusBadge status={data.client.status} /></> : <p className="text-slate-400">No client linked.</p>}</div></Section><Section title="Training Statistics"><div className="grid grid-cols-2 gap-3">{data.stats ? <><Metric label="Planned" value={data.stats.sessionsPlanned ?? 0} /><Metric label="Delivered" value={data.stats.sessionsDelivered ?? 0} /><Metric label="Attendance" value={`${data.stats.attendanceRate ?? 0}%`} /><Metric label="NPS" value={data.stats.npsScore ?? '—'} /></> : <p className="col-span-2 py-6 text-center text-sm text-slate-400">No training statistics recorded.</p>}</div></Section></div>
+    <Section title={`Quotations (${data.quotes.length})`}><DataTable headers={['Quote No', 'Amount', 'Status', 'Issued', 'Valid Until']} empty="No quotations linked to this programme." rows={data.quotes.map((item) => [<td key="n" className="px-4 py-3 font-medium text-violet-700">{item.quoteNo}</td>, <td key="a" className="px-4 py-3">{formatRM(item.amount)}</td>, <td key="s" className="px-4 py-3"><StatusBadge status={item.status} /></td>, <td key="i" className="px-4 py-3">{formatDate(item.issueDate)}</td>, <td key="v" className="px-4 py-3">{formatDate(item.validUntil)}</td>])} /></Section>
+    <Section title={`Purchase Orders (${data.pos.length})`}><DataTable headers={['PO No', 'Amount', 'Status', 'Issued', 'Received']} empty="No purchase orders linked to this programme." rows={data.pos.map((item) => [<td key="n" className="px-4 py-3 font-medium text-violet-700">{item.poNo}</td>, <td key="a" className="px-4 py-3">{formatRM(item.amount)}</td>, <td key="s" className="px-4 py-3"><StatusBadge status={item.status} /></td>, <td key="i" className="px-4 py-3">{formatDate(item.issueDate)}</td>, <td key="r" className="px-4 py-3">{item.receivedDate ? formatDate(item.receivedDate) : 'Pending'}</td>])} /></Section>
+    <Section title={`Invoices (${data.invs.length})`}><DataTable headers={['Invoice No', 'Description', 'Amount', 'Paid', 'Due Date', 'Status']} empty="No invoices linked to this programme." rows={data.invs.map((item) => [<td key="n" className="px-4 py-3 font-medium text-violet-700">{item.invoiceNo}</td>, <td key="d" className="px-4 py-3">{item.description || '—'}</td>, <td key="a" className="px-4 py-3">{formatRM(item.amount || item.totalAmount)}</td>, <td key="p" className="px-4 py-3">{formatRM(item.paidAmount)}</td>, <td key="du" className="px-4 py-3">{formatDate(item.dueDate)}</td>, <td key="s" className="px-4 py-3"><StatusBadge status={item.status} /></td>])} /></Section>
+    <Section title={`Payments (${data.pays.length})`}><DataTable headers={['Payment No', 'Invoice', 'Amount', 'Method', 'Date', 'Reference', 'Status']} empty="No payments linked to this programme." rows={data.pays.map((item) => [<td key="n" className="px-4 py-3 font-medium text-violet-700">{item.paymentNo}</td>, <td key="i" className="px-4 py-3">{item.invoiceNo || '—'}</td>, <td key="a" className="px-4 py-3">{formatRM(item.amount)}</td>, <td key="m" className="px-4 py-3">{item.method || '—'}</td>, <td key="d" className="px-4 py-3">{formatDate(item.date)}</td>, <td key="r" className="px-4 py-3 font-mono text-xs">{item.reference || '—'}</td>, <td key="s" className="px-4 py-3"><StatusBadge status={item.status} /></td>])} /></Section>
+    <div className="grid gap-6 lg:grid-cols-2"><Section title={`Training Sessions (${data.sessions.length})`}><DataTable headers={['Session', 'Date', 'Trainer', 'Mode', 'Status']} empty="No training sessions scheduled." rows={data.sessions.map((item) => [<td key="t" className="px-4 py-3 font-medium">{item.title}</td>, <td key="d" className="px-4 py-3">{formatDate(item.date)}</td>, <td key="tr" className="px-4 py-3">{item.trainer || '—'}</td>, <td key="m" className="px-4 py-3">{item.mode || '—'}</td>, <td key="s" className="px-4 py-3"><StatusBadge status={item.status} /></td>])} /></Section><Section title={`Participants (${data.pax.length})`}><DataTable headers={['Name', 'Email', 'Phone', 'Status']} empty="No participants enrolled." rows={data.pax.map((item) => [<td key="n" className="px-4 py-3 font-medium">{item.name}</td>, <td key="e" className="px-4 py-3">{item.email || '—'}</td>, <td key="p" className="px-4 py-3">{item.phone || '—'}</td>, <td key="s" className="px-4 py-3"><StatusBadge status={item.status} /></td>])} /></Section></div>
     <div className="grid gap-6 lg:grid-cols-3"><Section title={`Documents (${data.docs.length})`}><DataTable headers={['Name', 'Type', 'Date']} empty="No documents uploaded." rows={data.docs.map((item) => [<td key="n" className="px-4 py-3 font-medium"><FileText className="mr-2 inline h-4 w-4" />{item.name}</td>, <td key="t" className="px-4 py-3">{item.type || '—'}</td>, <td key="d" className="px-4 py-3">{formatDate(item.date)}</td>])} /></Section><Section title={`Action Items (${data.actions.length})`}><DataTable headers={['Task', 'Owner', 'Due']} empty="No action items." rows={data.actions.map((item) => [<td key="t" className="px-4 py-3 font-medium">{item.title}</td>, <td key="o" className="px-4 py-3">{item.owner || '—'}</td>, <td key="d" className="px-4 py-3">{formatDate(item.dueDate)}</td>])} /></Section><Section title={`Client Contacts (${data.contacts.length})`}><DataTable headers={['Name', 'Email', 'Primary']} empty="No client contacts." rows={data.contacts.map((item) => [<td key="n" className="px-4 py-3 font-medium">{item.name}</td>, <td key="e" className="px-4 py-3">{item.email || '—'}</td>, <td key="p" className="px-4 py-3">{item.isPrimary ? 'Yes' : '—'}</td>])} /></Section></div>
-
-    <Section title={`Audit History (${data.audit.length})`}><DataTable headers={['Date', 'Action', 'User']} empty="No audit history recorded." rows={data.audit.map((item) => [<td key="d" className="px-4 py-3">{formatDate(item.created || item.date)}</td>, <td key="a" className="px-4 py-3">{item.action || item.event || '—'}</td>, <td key="u" className="px-4 py-3">{item.userName || item.user || '—'}</td>])} /></Section>
+    <Section title={`Audit History (${data.audit.length})`}><DataTable headers={['Date', 'Action', 'User']} empty="No audit history recorded." rows={data.audit.map((item) => [<td key="d" className="px-4 py-3">{formatDate(item.timestamp)}</td>, <td key="a" className="px-4 py-3">{item.action || '—'}</td>, <td key="u" className="px-4 py-3">{item.user || '—'}</td>])} /></Section>
   </div>;
 }
