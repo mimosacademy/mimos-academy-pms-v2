@@ -36,7 +36,7 @@ jobs:
           grep -q "Supabase + Vercel" docs/DEPLOYMENT.md
       - name: Verify unique security migrations
         run: |
-          for version in 015 016 017 018; do
+          for version in 015 016 017 019; do
             test "$(find supabase/migrations -maxdepth 1 -type f -name "${version}_*.sql" | wc -l)" -eq 1
           done
       - name: Verify no broad sensitive RLS
@@ -50,9 +50,9 @@ jobs:
           grep -q "revoke all on function public.fn_programme_completeness(bigint) from public, anon, authenticated" supabase/migrations/017_authorization_boundary_hardening.sql
       - name: Verify transaction hardening
         run: |
-          grep -q "alter column operation_id set not null" supabase/migrations/018_application_transaction_hardening.sql
-          grep -q "gen_random_uuid()" supabase/migrations/018_application_transaction_hardening.sql
-          grep -q "with check (false)" supabase/migrations/018_application_transaction_hardening.sql
+          grep -q "alter column operation_id set not null" supabase/migrations/019_application_transaction_hardening.sql
+          grep -q "gen_random_uuid()" supabase/migrations/019_application_transaction_hardening.sql
+          grep -q "with check (false)" supabase/migrations/019_application_transaction_hardening.sql
       - name: Verify staging promotion is service-role only
         run: |
           for f in supabase/migrations/*.sql; do
