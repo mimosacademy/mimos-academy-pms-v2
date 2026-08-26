@@ -3,109 +3,18 @@
 create or replace function public.fn_days_outstanding(p_due_date date,p_payment_status_id bigint)
 returns integer language plpgsql stable as $$
 declare paid_id bigint;
-begin
-  select id into paid_id from public.payment_status where code='PAID' limit 1;
-  if p_due_date is null or p_payment_status_id=paid_id then return null; end if;
-  return current_date-p_due_date;
-end;
+begin select id into paid_id from public.payment_status where code='PAID' limit 1; if p_due_date is null or p_payment_status_id=paid_id then return null; end if; return current_date-p_due_date; end;
 $$;
+create or replace function public.fn_weighted_forecast(p_forecast numeric(18,2),p_probability numeric(5,2)) returns numeric(18,2) language sql immutable as $$ select case when p_forecast is null or p_probability is null then null else round(p_forecast*(p_probability/100),2) end $$;
+create or replace function public.fn_calc_sst(p_base_amount numeric(18,2),p_sst_rate numeric(5,4)) returns numeric(18,2) language sql immutable as $$ select case when p_base_amount is null or p_sst_rate is null then null else round(p_base_amount*p_sst_rate,2) end $$;
+create or replace function public.fn_calc_total_incl_sst(p_base_amount numeric(18,2),p_sst_amount numeric(18,2)) returns numeric(18,2) language sql immutable as $$ select case when p_base_amount is null then null else p_base_amount+coalesce(p_sst_amount,0) end $$;
+create or replace function public.fn_programme_completeness(p_programme_id bigint) returns integer language sql stable as $$ select round(((case when exists(select 1 from public.quotation where programme_id=p_programme_id) then 1 else 0 end)+(case when exists(select 1 from public.purchase_order where programme_id=p_programme_id) then 1 else 0 end)+(case when exists(select 1 from public.invoice where programme_id=p_programme_id and not is_placeholder) then 1 else 0 end)+(case when exists(select 1 from public.payment where programme_id=p_programme_id) then 1 else 0 end)+(case when exists(select 1 from public.programme p join public.programme_status ps on ps.id=p.programme_status_id where p.id=p_programme_id and ps.code in('DELIVERED','COMPLETED')) then 1 else 0 end)+(case when exists(select 1 from public.training_stat where programme_id=p_programme_id) then 1 else 0 end)+(case when exists(select 1 from public.invoice where programme_id=p_programme_id and amount_excl_tax>0) then 1 else 0 end)+(case when exists(select 1 from public.programme where id=p_programme_id and pic_id is not null) then 1 else 0 end))::numeric/8*100); $$;
+create or replace function public.fn_programme_financial_summary(p_programme_id bigint) returns jsonb language sql stable as $$ select jsonb_build_object('total_invoices',count(*),'total_revenue_excl_tax',coalesce(sum(amount_excl_tax),0),'total_sst',coalesce(sum(sst_amount),0),'total_revenue_incl_tax',coalesce(sum(total_incl_tax),0),'total_collected',coalesce(sum(amount_collected),0),'total_outstanding',coalesce(sum(amount_outstanding),0),'paid_count',count(*) filter(where exists(select 1 from public.payment_status ps where ps.id=invoice.payment_status_id and ps.code='PAID')),'unpaid_count',count(*) filter(where exists(select 1 from public.payment_status ps where ps.id=invoice.payment_status_id and ps.code='UNPAID')),'overdue_count',count(*) filter(where exists(select 1 from public.payment_status ps where ps.id=invoice.payment_status_id and ps.code='UNPAID') and days_outstanding>0)) from public.invoice where programme_id=p_programme_id and not is_cancelled and not is_placeholder; $$;
 
-create or replace function public.fn_weighted_forecast(p_forecast numeric(18,2),p_probability numeric(5,2))
-returns numeric(18,2) language sql immutable as $$ select case when p_forecast is null or p_probability is null then null else round(p_forecast*(p_probability/100),2) end $$;
-
-create or replace function public.fn_calc_sst(p_base_amount numeric(18,2),p_sst_rate numeric(5,4))
-returns numeric(18,2) language sql immutable as $$ select case when p_base_amount is null or p_sst_rate is null then null else round(p_base_amount*p_sst_rate,2) end $$;
-
-create or replace function public.fn_calc_total_incl_sst(p_base_amount numeric(18,2),p_sst_amount numeric(18,2))
-returns numeric(18,2) language sql immutable as $$ select case when p_base_amount is null then null else p_base_amount+coalesce(p_sst_amount,0) end $$;
-
-create or replace function public.fn_programme_completeness(p_programme_id bigint)
-returns integer language sql stable as $$
-select round((
-  (case when exists(select 1 from public.quotation where programme_id=p_programme_id) then 1 else 0 end)+
-  (case when exists(select 1 from public.purchase_order where programme_id=p_programme_id) then 1 else 0 end)+
-  (case when exists(select 1 from public.invoice where programme_id=p_programme_id and not is_placeholder) then 1 else 0 end)+
-  (case when exists(select 1 from public.payment where programme_id=p_programme_id) then 1 else 0 end)+
-  (case when exists(select 1 from public.programme p join public.programme_status ps on ps.id=p.programme_status_id where p.id=p_programme_id and ps.code in ('DELIVERED','COMPLETED')) then 1 else 0 end)+
-  (case when exists(select 1 from public.training_stat where programme_id=p_programme_id) then 1 else 0 end)+
-  (case when exists(select 1 from public.invoice where programme_id=p_programme_id and amount_excl_tax>0) then 1 else 0 end)+
-  (case when exists(select 1 from public.programme where id=p_programme_id and pic_id is not null) then 1 else 0 end)
-)::numeric/8*100);
-$$;
-
-create or replace function public.fn_programme_financial_summary(p_programme_id bigint)
-returns jsonb language sql stable as $$
-select jsonb_build_object(
- 'total_invoices',count(*), 'total_revenue_excl_tax',coalesce(sum(amount_excl_tax),0), 'total_sst',coalesce(sum(sst_amount),0),
- 'total_revenue_incl_tax',coalesce(sum(total_incl_tax),0), 'total_collected',coalesce(sum(amount_collected),0), 'total_outstanding',coalesce(sum(amount_outstanding),0),
- 'paid_count',count(*) filter(where exists(select 1 from public.payment_status ps where ps.id=invoice.payment_status_id and ps.code='PAID')),
- 'unpaid_count',count(*) filter(where exists(select 1 from public.payment_status ps where ps.id=invoice.payment_status_id and ps.code='UNPAID')),
- 'overdue_count',count(*) filter(where exists(select 1 from public.payment_status ps where ps.id=invoice.payment_status_id and ps.code='UNPAID') and days_outstanding>0)
-) from public.invoice where programme_id=p_programme_id and not is_cancelled and not is_placeholder;
-$$;
-
-create or replace function public.sp_refresh_programme_financials(p_programme_id bigint)
-returns void language plpgsql security definer set search_path=public as $$ begin perform private.refresh_programme_financials(p_programme_id); end; $$;
-
-create or replace function public.sp_refresh_all_programme_financials()
-returns void language plpgsql security definer set search_path=public as $$
-declare x record; begin for x in select id from public.programme where coalesce(is_internal,false) is not null loop perform private.refresh_programme_financials(x.id); end loop; end; $$;
-
-create or replace function public.sp_evaluate_completeness(p_programme_id bigint)
-returns void language plpgsql security definer set search_path=public as $$
-declare q int; po int; inv int; pay int; del int; part int; chg int; pic int; overall int; missing jsonb:='[]'::jsonb;
-begin
- q:=case when exists(select 1 from public.quotation where programme_id=p_programme_id) then 100 else 0 end;
- po:=case when exists(select 1 from public.purchase_order where programme_id=p_programme_id) then 100 else 0 end;
- inv:=case when exists(select 1 from public.invoice where programme_id=p_programme_id and not is_placeholder) then 100 else 0 end;
- pay:=case when exists(select 1 from public.payment where programme_id=p_programme_id) then 100 else 0 end;
- del:=case when exists(select 1 from public.programme p join public.programme_status ps on ps.id=p.programme_status_id where p.id=p_programme_id and ps.code in('DELIVERED','COMPLETED')) then 100 else 0 end;
- part:=case when exists(select 1 from public.training_stat where programme_id=p_programme_id) then 100 else 0 end;
- chg:=case when exists(select 1 from public.invoice where programme_id=p_programme_id and amount_excl_tax>0) then 100 else 0 end;
- pic:=case when exists(select 1 from public.programme where id=p_programme_id and pic_id is not null) then 100 else 0 end;
- overall:=round((q+po+inv+pay+del+part+chg+pic)/8.0);
- if q=0 then missing:=missing||'["quotation"]'::jsonb; end if;
- if po=0 then missing:=missing||'["purchase_order"]'::jsonb; end if;
- if inv=0 then missing:=missing||'["invoice"]'::jsonb; end if;
- if pay=0 then missing:=missing||'["payment"]'::jsonb; end if;
- if del=0 then missing:=missing||'["delivery"]'::jsonb; end if;
- if part=0 then missing:=missing||'["participant"]'::jsonb; end if;
- if chg=0 then missing:=missing||'["charges"]'::jsonb; end if;
- if pic=0 then missing:=missing||'["pic"]'::jsonb; end if;
- insert into public.completeness_score(programme_id,quotation_score,po_score,invoice_score,payment_score,delivery_score,participant_score,charges_score,pic_score,overall_score,overall_status,missing_components,na_components)
- values(p_programme_id,q,po,inv,pay,del,part,chg,pic,overall,case when overall=100 then 'COMPLETE' when overall>=75 then 'NEARLY_COMPLETE' when overall>=50 then 'PARTIAL' when overall>=25 then 'INCOMPLETE' else 'CRITICAL' end,missing,'[]'::jsonb)
- on conflict(programme_id) do update set quotation_score=excluded.quotation_score,po_score=excluded.po_score,invoice_score=excluded.invoice_score,payment_score=excluded.payment_score,delivery_score=excluded.delivery_score,participant_score=excluded.participant_score,charges_score=excluded.charges_score,pic_score=excluded.pic_score,overall_score=excluded.overall_score,overall_status=excluded.overall_status,missing_components=excluded.missing_components,evaluated_at=now();
-end; $$;
-
-create or replace function public.sp_evaluate_all_completeness()
-returns void language plpgsql security definer set search_path=public as $$ declare x record; begin for x in select id from public.programme loop perform public.sp_evaluate_completeness(x.id); end loop; end; $$;
-
-create or replace function public.sp_get_overdue_invoices(p_days_threshold integer default 0)
-returns table(invoice_no varchar,invoice_date date,due_date date,days_outstanding integer,amount_excl_tax numeric,total_incl_tax numeric,amount_outstanding numeric,client_name varchar,programme_title varchar,payment_status varchar,account_manager varchar)
-language sql stable as $$
-select i.invoice_no,i.invoice_date,i.due_date,i.days_outstanding,i.amount_excl_tax,i.total_incl_tax,i.amount_outstanding,c.company_name,p.title,ps.name,s.full_name
-from public.invoice i join public.client c on c.id=i.client_id join public.programme p on p.id=i.programme_id join public.payment_status ps on ps.id=i.payment_status_id left join public.staff s on s.id=p.account_manager_id
-where not i.is_cancelled and not i.is_placeholder and ps.code='UNPAID' and i.days_outstanding>p_days_threshold order by i.days_outstanding desc;
-$$;
-
-create or replace function public.sp_get_pipeline_by_salesman(p_salesman_id bigint)
-returns table(opportunity_code varchar,client_name varchar,project_title varchar,forecast_value numeric,probability_percentage numeric,weighted_value numeric,status_name varchar,speed_to_market varchar,expected_close_date date)
-language sql stable as $$
-select o.opportunity_code,c.company_name,o.project_title,o.forecast_value,o.probability_percentage,o.weighted_value,os.name,stm.name,o.expected_close_date
-from public.opportunity o join public.client c on c.id=o.client_id join public.opportunity_status os on os.id=o.opportunity_status_id left join public.speed_to_market stm on stm.id=o.speed_to_market_id
-where o.salesman_id=p_salesman_id and os.code not in('LOST','WON') order by o.weighted_value desc;
-$$;
-
-create or replace function public.sp_import_stg_invoice(p_batch_id bigint)
-returns jsonb language plpgsql security definer set search_path=public as $$
-declare total_rows integer; invalid_rows integer;
-begin
- update public.import_batch set status='PROCESSING',start_time=coalesce(start_time,now()) where id=p_batch_id;
- select count(*),count(*) filter(where validation_status not in('VALID','READY','APPROVED')) into total_rows,invalid_rows from public.stg_invoice where import_batch_id=p_batch_id;
- update public.import_batch set status=case when invalid_rows=0 then 'READY_TO_COMMIT' else 'REVIEW_REQUIRED' end,records_total=total_rows,records_in_review=invalid_rows,end_time=case when invalid_rows=0 then now() else null end where id=p_batch_id;
- return jsonb_build_object('batch_id',p_batch_id,'records_total',total_rows,'records_in_review',invalid_rows,'status',case when invalid_rows=0 then 'READY_TO_COMMIT' else 'REVIEW_REQUIRED' end);
-end; $$;
-
-create or replace function public.sp_export_r1() returns setof public.v_r1_income_statement language sql stable as $$ select * from public.v_r1_income_statement $$;
-create or replace function public.sp_export_r2() returns setof public.v_r2_training_stats language sql stable as $$ select * from public.v_r2_training_stats $$;
-create or replace function public.sp_export_r3() returns setof public.v_r3_funnel_pipeline language sql stable as $$ select * from public.v_r3_funnel_pipeline $$;
+create or replace function public.sp_refresh_programme_financials(p_programme_id bigint) returns void language plpgsql security definer set search_path=public as $$ begin perform private.refresh_programme_financials(p_programme_id); end; $$;
+create or replace function public.sp_refresh_all_programme_financials() returns void language plpgsql security definer set search_path=public as $$ declare x record; begin for x in select id from public.programme loop perform private.refresh_programme_financials(x.id); end loop; end; $$;
+create or replace function public.sp_evaluate_completeness(p_programme_id bigint) returns void language plpgsql security definer set search_path=public as $$ declare q int; po int; inv int; pay int; del int; part int; chg int; pic int; overall int; missing jsonb:='[]'::jsonb; begin q:=case when exists(select 1 from public.quotation where programme_id=p_programme_id) then 100 else 0 end; po:=case when exists(select 1 from public.purchase_order where programme_id=p_programme_id) then 100 else 0 end; inv:=case when exists(select 1 from public.invoice where programme_id=p_programme_id and not is_placeholder) then 100 else 0 end; pay:=case when exists(select 1 from public.payment where programme_id=p_programme_id) then 100 else 0 end; del:=case when exists(select 1 from public.programme p join public.programme_status ps on ps.id=p.programme_status_id where p.id=p_programme_id and ps.code in('DELIVERED','COMPLETED')) then 100 else 0 end; part:=case when exists(select 1 from public.training_stat where programme_id=p_programme_id) then 100 else 0 end; chg:=case when exists(select 1 from public.invoice where programme_id=p_programme_id and amount_excl_tax>0) then 100 else 0 end; pic:=case when exists(select 1 from public.programme where id=p_programme_id and pic_id is not null) then 100 else 0 end; overall:=round((q+po+inv+pay+del+part+chg+pic)/8.0); if q=0 then missing:=missing||'["quotation"]'::jsonb; end if; if po=0 then missing:=missing||'["purchase_order"]'::jsonb; end if; if inv=0 then missing:=missing||'["invoice"]'::jsonb; end if; if pay=0 then missing:=missing||'["payment"]'::jsonb; end if; if del=0 then missing:=missing||'["delivery"]'::jsonb; end if; if part=0 then missing:=missing||'["participant"]'::jsonb; end if; if chg=0 then missing:=missing||'["charges"]'::jsonb; end if; if pic=0 then missing:=missing||'["pic"]'::jsonb; end if; insert into public.completeness_score(programme_id,quotation_score,po_score,invoice_score,payment_score,delivery_score,participant_score,charges_score,pic_score,overall_score,overall_status,missing_components,na_components) values(p_programme_id,q,po,inv,pay,del,part,chg,pic,overall,case when overall=100 then 'COMPLETE' when overall>=75 then 'NEARLY_COMPLETE' when overall>=50 then 'PARTIAL' when overall>=25 then 'INCOMPLETE' else 'CRITICAL' end,missing,'[]'::jsonb) on conflict(programme_id) do update set quotation_score=excluded.quotation_score,po_score=excluded.po_score,invoice_score=excluded.invoice_score,payment_score=excluded.payment_score,delivery_score=excluded.delivery_score,participant_score=excluded.participant_score,charges_score=excluded.charges_score,pic_score=excluded.pic_score,overall_score=excluded.overall_score,overall_status=excluded.overall_status,missing_components=excluded.missing_components,evaluated_at=now(); end; $$;
+create or replace function public.sp_evaluate_all_completeness() returns void language plpgsql security definer set search_path=public as $$ declare x record; begin for x in select id from public.programme loop perform public.sp_evaluate_completeness(x.id); end loop; end; $$;
+create or replace function public.sp_get_overdue_invoices(p_days_threshold integer default 0) returns table(invoice_no varchar,invoice_date date,due_date date,days_outstanding integer,amount_excl_tax numeric,total_incl_tax numeric,amount_outstanding numeric,client_name varchar,programme_title varchar,payment_status varchar,account_manager varchar) language sql stable as $$ select i.invoice_no,i.invoice_date,i.due_date,i.days_outstanding,i.amount_excl_tax,i.total_incl_tax,i.amount_outstanding,c.company_name,p.title,ps.name,s.full_name from public.invoice i join public.client c on c.id=i.client_id join public.programme p on p.id=i.programme_id join public.payment_status ps on ps.id=i.payment_status_id left join public.staff s on s.id=p.account_manager_id where not i.is_cancelled and not i.is_placeholder and ps.code='UNPAID' and i.days_outstanding>p_days_threshold order by i.days_outstanding desc; $$;
+create or replace function public.sp_get_pipeline_by_salesman(p_salesman_id bigint) returns table(opportunity_code varchar,client_name varchar,project_title varchar,forecast_value numeric,probability_percentage numeric,weighted_value numeric,status_name varchar,speed_to_market varchar,expected_close_date date) language sql stable as $$ select o.opportunity_code,c.company_name,o.project_title,o.forecast_value,o.probability_percentage,o.weighted_value,os.name,stm.name,o.expected_close_date from public.opportunity o join public.client c on c.id=o.client_id join public.opportunity_status os on os.id=o.opportunity_status_id left join public.speed_to_market stm on stm.id=o.speed_to_market_id where o.salesman_id=p_salesman_id and os.code not in('LOST','WON') order by o.weighted_value desc; $$;
+create or replace function public.sp_import_stg_invoice(p_batch_id bigint) returns jsonb language plpgsql security definer set search_path=public as $$ declare total_rows integer; invalid_rows integer; begin update public.import_batch set status='PROCESSING',start_time=coalesce(start_time,now()) where id=p_batch_id; select count(*),count(*) filter(where validation_status not in('VALID','READY','APPROVED')) into total_rows,invalid_rows from public.stg_invoice where import_batch_id=p_batch_id; update public.import_batch set status=case when invalid_rows=0 then 'READY_TO_COMMIT' else 'REVIEW_REQUIRED' end,records_total=total_rows,records_in_review=invalid_rows,end_time=case when invalid_rows=0 then now() else null end where id=p_batch_id; return jsonb_build_object('batch_id',p_batch_id,'records_total',total_rows,'records_in_review',invalid_rows,'status',case when invalid_rows=0 then 'READY_TO_COMMIT' else 'REVIEW_REQUIRED' end); end; $$;
