@@ -9,11 +9,10 @@ TMP_DIR="${TMPDIR:-/tmp}/mimos-role-smoke"
 mkdir -p "$TMP_DIR"
 trap 'rm -rf "$TMP_DIR"' EXIT
 
-api() {
-  curl -sS --retry 10 --retry-all-errors --retry-delay 1 -w '\n%{http_code}' "$@"
-}
+api() { curl -sS --retry 10 --retry-all-errors --retry-delay 1 -w '\n%{http_code}' "$@"; }
 status() { printf '%s' "${1:-000}" | tail -n1; }
 body() { printf '%s' "${1:-}" | sed '$d'; }
+json_id() { python3 -c 'import json,sys; data=json.load(sys.stdin); rid=data.get("id"); raise SystemExit("Response did not contain id") if not rid else print(rid)'; }
 
 wait_for_health() {
   local response code
@@ -39,15 +38,11 @@ expect_status() {
   fi
 }
 
-json_id() { python3 -c 'import json,sys; print(json.load(sys.stdin)["id"])'; }
-
 login() {
   local collection="$1" identity="$2" password="$3"
   local response code payload
   wait_for_health
-  response="$(api -X POST -H 'Content-Type: application/json' \
-    -d "{\"identity\":\"$identity\",\"password\":\"$password\"}" \
-    "$BASE_URL/api/collections/$collection/auth-with-password")"
+  response="$(api -X POST -H 'Content-Type: application/json' -d "{\"identity\":\"$identity\",\"password\":\"$password\"}" "$BASE_URL/api/collections/$collection/auth-with-password")"
   code="$(status "$response")"
   payload="$(body "$response")"
   if [[ "$code" != "200" ]]; then
@@ -66,8 +61,7 @@ print(token)'
 create_record() {
   local token="$1" collection="$2" payload="$3"
   local response code
-  response="$(api -X POST -H "Authorization: $token" -H 'Content-Type: application/json' \
-    -d "$payload" "$BASE_URL/api/collections/$collection/records")"
+  response="$(api -X POST -H "Authorization: $token" -H 'Content-Type: application/json' -d "$payload" "$BASE_URL/api/collections/$collection/records")"
   code="$(status "$response")"
   if [[ "$code" != 2* ]]; then
     echo "Create failed: $collection HTTP=$code"
@@ -83,11 +77,16 @@ import urllib.parse,sys
 print(urllib.parse.quote('email="'+sys.argv[1]+'"'))
 PY
 )"
-ADMIN_RESPONSE="$(api -H "Authorization: $ADMIN_TOKEN" "$BASE_URL/api/collections/users/records?filter=$ADMIN_FILTER&perPage=1")"
-ADMIN_CODE="$(status "$ADMIN_RESPONSE")"
-[[ "$ADMIN_CODE" == "200" ]] || { echo "Unable to resolve bootstrap Super Admin HTTP=$ADMIN_CODE"; body "$ADMIN_RESPONSE"; exit 1; }
-ADMIN_ID="$(body "$ADMIN_RESPONSE" | json_id)"
-[[ -n "$ADMIN_ID" ]] || { echo 'Bootstrap Super Admin ID is empty'; exit 1; }
+ADMIN_ID=""
+for attempt in $(seq 1 10); do
+  ADMIN_RESPONSE="$(api -H "Authorization: $ADMIN_TOKEN" "$BASE_URL/api/collections/users/records?filter=$ADMIN_FILTER&perPage=1")" || true
+  ADMIN_CODE="$(status "$ADMIN_RESPONSE")"
+  if [[ "$ADMIN_CODE" == "200" ]]; then
+    if ADMIN_ID="$(body "$ADMIN_RESPONSE" | json_id 2>/dev/null)"; then break; fi
+  fi
+  sleep 1
+done
+[[ -n "$ADMIN_ID" ]] || { echo "Unable to resolve bootstrap Super Admin ID after retries"; exit 1; }
 echo "Using Super Admin owner id $ADMIN_ID"
 
 roles=(manager finance sales programme_pic trainer viewer)
@@ -117,9 +116,13 @@ for role in "${roles[@]}"; do
   [[ "$actual" == "$role" ]] || { echo "Role mismatch expected=$role actual=$actual"; exit 1; }
 done
 
-manager="$(login_role manager)"; viewer="$(login_role viewer)"; sales="$(login_role sales)"; finance="$(login_role finance)"; trainer="$(login_role trainer)"
-expect_status 200 -H "Authorization: $manager" "$BASE_URL/api/collections/users/records?perPage=1"
+manager="$(login_role manager)"
+viewer="$(login_role viewer)"
+sales="$(login_role sales)"
+finance="$(login_role finance)"
+trainer="$(login_role trainer)"
 
+expect_status 200 -H "Authorization: $manager" "$BASE_URL/api/collections/users/records?perPage=1"
 viewer_response="$(api -H "Authorization: $viewer" "$BASE_URL/api/collections/users/records?perPage=1")"
 [[ "$(status "$viewer_response")" == "200" ]] || { echo 'Viewer list failed'; body "$viewer_response"; exit 1; }
 viewer_total="$(body "$viewer_response" | python3 -c 'import json,sys; print(json.load(sys.stdin).get("totalItems",-1))')"
