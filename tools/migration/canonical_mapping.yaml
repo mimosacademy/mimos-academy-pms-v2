@@ -1,0 +1,52 @@
+version: "1.0"
+source_of_truth: excel_to_json
+rules:
+  preserve_source_values: true
+  deduplicate_in_source: false
+  infer_primary_keys: false
+  infer_foreign_keys: false
+  blank_is_null: false
+  na_is_null: false
+  monetary_as_text_until_validated: true
+  commit_only_validated_records: true
+  ambiguous_records_to_conflict_queue: true
+
+datasets:
+  R1_MIMOS_Academy_INCOME_STATEMENT_Extraction.json:
+    targets: [invoice, payment, client]
+    priority: high
+    notes: R1 is a financial source and must not be silently overwritten by another workbook.
+  invoice_2026_Extraction.json:
+    targets: [invoice, payment, client]
+    priority: high
+    notes: Candidate invoice-level source; reconcile against R1 before canonical commit.
+  cost_of_sales_2026_Extraction.json:
+    targets: [invoice, payment]
+    priority: high
+    notes: Cost/profit fields remain source lineage until a canonical cost model is confirmed.
+  R2_Overall_Report_2026_Extraction.json:
+    targets: [training_stat, participant, programme]
+    priority: high
+  R3_Group_2026_Funnel_Tracker_Extraction.json:
+    targets: [opportunity, client, programme]
+    priority: high
+  sales_report_2026-08-19_Extraction.json:
+    targets: [opportunity, client, staff]
+    priority: medium
+  office_funnel_2026-08-19_Extraction.json:
+    targets: [action_item, client, programme]
+    priority: medium
+  00_Quotation_Tracker_Extraction.json:
+    targets: [quotation, client, programme]
+    priority: high
+  User_Profiles_Mapping_Extraction.json:
+    targets: [staff, auth.users]
+    priority: critical
+    notes: Credential fields must never be copied into public application tables or logs.
+
+resolution_order:
+  - preserve all source rows in staging
+  - detect candidate business keys
+  - compare cross-source records
+  - create data_conflict for ambiguous matches
+  - commit only validated canonical records
