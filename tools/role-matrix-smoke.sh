@@ -9,12 +9,23 @@ TMP_DIR="${TMPDIR:-/tmp}/mimos-role-smoke"
 mkdir -p "$TMP_DIR"
 trap 'rm -rf "$TMP_DIR"' EXIT
 
-# PocketBase can briefly restart/settle after bootstrap. Retry transient connection failures.
 api() {
-  curl -sS --retry 10 --retry-all-errors --retry-delay 0.2 -w '\n%{http_code}' "$@"
+  curl -sS --retry 10 --retry-all-errors --retry-delay 1 -w '\n%{http_code}' "$@"
 }
 status() { printf '%s' "${1:-000}" | tail -n1; }
 body() { printf '%s' "${1:-}" | sed '$d'; }
+
+wait_for_health() {
+  local response code
+  for _ in $(seq 1 20); do
+    response="$(api "$BASE_URL/api/health")" || true
+    code="$(status "$response")"
+    if [[ "$code" == "200" ]]; then return 0; fi
+    sleep 1
+  done
+  echo "PocketBase is not reachable at $BASE_URL" >&2
+  return 1
+}
 
 expect_status() {
   local expected="$1"; shift
@@ -28,18 +39,12 @@ expect_status() {
   fi
 }
 
-json_id() {
-  python3 -c 'import json,sys; print(json.load(sys.stdin)["id"])'
-}
-
-json_field() {
-  local field="$1"
-  python3 - "$field" -c 'import json,sys; print(json.load(sys.stdin).get(sys.argv[1],""))'
-}
+json_id() { python3 -c 'import json,sys; print(json.load(sys.stdin)["id"])'; }
 
 login() {
   local collection="$1" identity="$2" password="$3"
   local response code payload
+  wait_for_health
   response="$(api -X POST -H 'Content-Type: application/json' \
     -d "{\"identity\":\"$identity\",\"password\":\"$password\"}" \
     "$BASE_URL/api/collections/$collection/auth-with-password")"
