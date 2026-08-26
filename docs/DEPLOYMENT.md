@@ -23,15 +23,21 @@ Never put `SUPABASE_SERVICE_ROLE_KEY` in browser/Vite environment variables.
 
 ## 3. Database migrations
 
-Apply Supabase migrations in filename order. The security remediation migration is:
+Apply Supabase migrations in filename order.
+
+Security remediation chain:
 
 ```text
+supabase/migrations/015_migration_function_security.sql
 supabase/migrations/016_security_integrity_hardening.sql
+supabase/migrations/017_authorization_boundary_hardening.sql
 ```
 
-Migration `015_migration_function_security.sql` remains authoritative for staging promotion and keeps `promote_stg_*` functions service-role-only.
+Migration `015_migration_function_security.sql` keeps staging promotion service-role-only. Migration `016_security_integrity_hardening.sql` establishes the broad RLS/financial/storage hardening. Migration `017_authorization_boundary_hardening.sql` is a **forward-only follow-up** that closes self-service privilege-escalation paths and removes legacy browser RPC exposure.
 
-Before applying `016_security_integrity_hardening.sql` to production:
+Never edit an already-applied migration. Add a new forward migration.
+
+Before applying a new security migration to production:
 
 1. Export/backup the current database.
 2. Apply the migration in a disposable/staging project first.
@@ -42,11 +48,11 @@ Before applying `016_security_integrity_hardening.sql` to production:
 7. Run Supabase security advisors and resolve any new high/critical findings.
 8. Only then apply to production.
 
-Never edit an already-applied migration. Add a new forward migration.
-
 ## 4. Authentication and roles
 
-Every application user must have a matching active row in `public.staff.auth_user_id` and a valid `staff_role`.
+Every application user must have a matching active row in `public.staff.auth_user_id` and a valid active `staff_role`.
+
+`public.staff.role_id` is the authoritative PMS authorization source. `public.profiles.role` must not be used to grant PMS privileges.
 
 Minimum production roles:
 
@@ -61,6 +67,8 @@ Minimum production roles:
 
 Do not rely on hidden React menus for authorization. PostgreSQL RLS is the security boundary.
 
+Self-service profile/staff updates must not be able to modify `role_id`, `is_active`, `auth_user_id`, `staff_id`, or profile `role`. These security-sensitive fields are administrator-controlled.
+
 ## 5. Security verification
 
 From Supabase SQL Editor and controlled test accounts, verify:
@@ -68,8 +76,10 @@ From Supabase SQL Editor and controlled test accounts, verify:
 - Viewer cannot read `invoice`, `payment`, or `invoice_payment_allocation`.
 - PIC/Trainer can only access programme-scoped records permitted by their programme assignment.
 - Finance can access financial records.
-- Authenticated users cannot execute staging promotion functions; those functions are service-role-only.
-- Audit records cannot be updated/deleted by application roles.
+- Authenticated users cannot execute staging promotion functions; those functions are service-role-only when present.
+- Legacy browser RPC helpers are not executable by `anon`.
+- Private authorization helpers remain available to RLS evaluation but are not exposed to `anon`.
+- Application roles cannot directly modify/delete audit records.
 - Views used by dashboards enforce underlying RLS.
 - Storage objects under `programmes/{programme_id}/...` cannot be read across programmes.
 - Service-role credentials are absent from frontend source and Vercel browser environment variables.
@@ -140,6 +150,8 @@ Run after every security or database release:
 - Duplicate `operation_id` is rejected.
 - Allocation above payment/invoice total is rejected.
 - Programme document upload/download works only for authorized programme access.
+- Non-admin self-update of staff security fields is rejected.
+- Non-admin self-update of profile security fields is rejected.
 - Audit event is created and cannot be modified by the application role.
 
 ## 11. Rollback
