@@ -1,10 +1,201 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
-const ALLOWED_TABLES=new Set(['client','programme','quotation','purchase_order','invoice','payment']);
-const ADMIN_ROLES=new Set(['SUPER_ADMIN','ADMIN','DATA_ADMIN']);
-const headers=(req:Request)=>{const allowed=new Set([Deno.env.get('APP_ORIGIN')??'',Deno.env.get('VITE_APP_ORIGIN')??''].filter(Boolean));const o=req.headers.get('Origin')??'';const h:Record<string,string>={'Access-Control-Allow-Headers':'authorization, x-client-info, apikey, content-type','Access-Control-Allow-Methods':'POST, OPTIONS','Vary':'Origin'};if(allowed.has(o))h['Access-Control-Allow-Origin']=o;return h};
-const json=(req:Request,b:unknown,s=200)=>new Response(JSON.stringify(b),{status:s,headers:{...headers(req),'Content-Type':'application/json'}});
-function norm(v:unknown){return v===null||v===undefined?'':String(v).trim().toLowerCase().replace(/\s+/g,' ')}
-function stable(o:unknown):unknown{if(Array.isArray(o))return o.map(stable);if(o&&typeof o==='object'){return Object.fromEntries(Object.entries(o as Record<string,unknown>).filter(([k])=>k!=='created_at'&&k!=='updated_at').sort(([a],[b])=>a.localeCompare(b)).map(([k,v])=>[k,stable(v)]))}return o}
-async function hash(o:Record<string,unknown>){const bytes=new TextEncoder().encode(JSON.stringify(stable(o)));const digest=await crypto.subtle.digest('SHA-256',bytes);return Array.from(new Uint8Array(digest)).map(b=>b.toString(16).padStart(2,'0')).join('')}
-function identity(table:string,r:Record<string,unknown>){const fields:Record<string,string[]>= {client:['client_id','registration_number','company_name'],programme:['programme_id','programme_code'],quotation:['quotation_id','quotation_no'],purchase_order:['po_id','po_no','po_reference'],invoice:['invoice_id','invoice_no','invoice_reference'],payment:['payment_id','payment_reference','transaction_id']};for(const f of fields[table]??[])if(norm(r[f]))return{field:f,value:norm(r[f])};return null}
-Deno.serve(async req=>{if(req.method==='OPTIONS')return new Response('ok',{headers:headers(req)});if(req.method!=='POST')return json(req,{error:'Method not allowed'},405);try{const a=req.headers.get('Authorization');if(!a?.startsWith('Bearer '))return json(req,{error:'Authentication required'},401);const db=createClient(Deno.env.get('SUPABASE_URL')!,Deno.env.get('SUPABASE_ANON_KEY')!,{global:{headers:{Authorization:a}}});const {data:{user},error}=await db.auth.getUser();if(error||!user)return json(req,{error:'Authentication required'},401);const {data:me}=await db.from('staff').select('role_id').eq('auth_user_id',user.id).eq('is_active',true).maybeSingle();if(!me)return json(req,{error:'Active PMS staff record required'},403);const {data:role}=await db.from('staff_role').select('code').eq('id',me.role_id).maybeSingle();if(!role||!ADMIN_ROLES.has(role.code))return json(req,{error:'Data administration access required'},403);const body=await req.json().catch(()=>null);const rows=Array.isArray(body?.rows)?body.rows:[];if(!rows.length||rows.length>5000)return json(req,{error:'rows must contain 1 to 5000 records'},400);const results=[];for(let i=0;i<rows.length;i++){const r=rows[i] as Record<string,unknown>,table=typeof body?.target_table==='string'?body.target_table:null;if(!table||!ALLOWED_TABLES.has(table)){results.push({row_number:i+1,operation:'REVIEW',reason:'Invalid or missing target table'});continue}const id=identity(table,r);if(!id){results.push({row_number:i+1,operation:'REVIEW',target_table:table,confidence:0,reason:'No deterministic identity'});continue}const lookupField=id.field==='client_id'?'id':id.field;const {data,error:e}=await db.from(table).select('*').eq(lookupField,id.value).limit(2);if(e){results.push({row_number:i+1,operation:'REVIEW',target_table:table,confidence:0,reason:'Canonical lookup failed'});continue}if(!data?.length){results.push({row_number:i+1,operation:'NEW',target_table:table,target_id:null,confidence:1,reason:`No existing ${lookupField} found`,proposed_payload:r,payload_hash:await hash(r)});continue}if(data.length>1){results.push({row_number:i+1,operation:'CONFLICT',target_table:table,confidence:0,reason:`Multiple canonical records matched ${lookupField}`,proposed_payload:r});continue}const existing=data[0] as Record<string,unknown>,changed:string[]=[];for(const[k,v]of Object.entries(r)){const target=k==='programme_name'?'title':k==='quotation_number'?'quotation_no':k==='po_number'?'po_no':k==='invoice_number'?'invoice_no':k;if(target in existing&&norm(existing[target])!==norm(v))changed.push(target)}results.push({row_number:i+1,operation:changed.length?'UPDATE':'UNCHANGED',target_table:table,target_id:existing.id,confidence:1,reason:changed.length?'Deterministic identity match with field changes':'Deterministic identity match; no field changes',changed_fields:changed,expected_existing_hash:await hash(existing),proposed_payload:r,payload_hash:await hash(r)})}return json(req,{results,counts:Object.fromEntries(['NEW','UPDATE','UNCHANGED','DUPLICATE','CONFLICT','REVIEW','REJECT'].map(x=>[x,results.filter((r:any)=>r.operation===x).length]))})}catch{return json(req,{error:'Request could not be completed'},500)}});
+
+const ALLOWED_TABLES = new Set(['client', 'programme', 'quotation', 'purchase_order', 'invoice', 'payment']);
+const ADMIN_ROLES = new Set(['SUPER_ADMIN', 'ADMIN', 'DATA_ADMIN']);
+const OPERATIONS = ['NEW', 'UPDATE', 'UNCHANGED', 'DUPLICATE', 'CONFLICT', 'INCOMPLETE', 'REVIEW', 'REJECT'];
+
+const headers = (req: Request) => {
+  const allowed = new Set([Deno.env.get('APP_ORIGIN') ?? '', Deno.env.get('VITE_APP_ORIGIN') ?? ''].filter(Boolean));
+  const origin = req.headers.get('Origin') ?? '';
+  const h: Record<string, string> = {
+    'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+    'Access-Control-Allow-Methods': 'POST, OPTIONS',
+    'Vary': 'Origin',
+  };
+  if (allowed.has(origin)) h['Access-Control-Allow-Origin'] = origin;
+  return h;
+};
+
+const json = (req: Request, body: unknown, status = 200) =>
+  new Response(JSON.stringify(body), { status, headers: { ...headers(req), 'Content-Type': 'application/json' } });
+
+function norm(v: unknown) {
+  if (v === null || v === undefined) return '';
+  return String(v).trim().toLowerCase().replace(/\s+/g, ' ');
+}
+
+function isMissing(v: unknown) {
+  return v === null || v === undefined || (typeof v === 'string' && v.trim() === '');
+}
+
+function stable(v: unknown): unknown {
+  if (Array.isArray(v)) return v.map(stable);
+  if (v && typeof v === 'object') {
+    return Object.fromEntries(
+      Object.entries(v as Record<string, unknown>)
+        .filter(([k]) => k !== 'created_at' && k !== 'updated_at')
+        .sort(([a], [b]) => a.localeCompare(b))
+        .map(([k, value]) => [k, stable(value)])
+    );
+  }
+  return v;
+}
+
+async function hash(row: Record<string, unknown>) {
+  const bytes = new TextEncoder().encode(JSON.stringify(stable(row)));
+  const digest = await crypto.subtle.digest('SHA-256', bytes);
+  return Array.from(new Uint8Array(digest)).map((b) => b.toString(16).padStart(2, '0')).join('');
+}
+
+function targetField(key: string) {
+  const aliases: Record<string, string> = {
+    programme_name: 'title',
+    quotation_number: 'quotation_no',
+    po_number: 'po_no',
+    invoice_number: 'invoice_no',
+  };
+  return aliases[key] ?? key;
+}
+
+function identity(table: string, row: Record<string, unknown>) {
+  const fields: Record<string, string[]> = {
+    client: ['client_id', 'registration_number', 'company_name'],
+    programme: ['programme_id', 'programme_code'],
+    quotation: ['quotation_id', 'quotation_no'],
+    purchase_order: ['po_id', 'po_no', 'po_reference'],
+    invoice: ['invoice_id', 'invoice_no', 'invoice_reference'],
+    payment: ['payment_id', 'payment_reference', 'transaction_id'],
+  };
+  for (const field of fields[table] ?? []) {
+    if (!isMissing(row[field])) return { field, value: norm(row[field]) };
+  }
+  return null;
+}
+
+function identityKey(table: string, id: { field: string; value: string }) {
+  return `${table}|${id.field}|${id.value}`;
+}
+
+function comparableIncoming(row: Record<string, unknown>) {
+  const out: Record<string, unknown> = {};
+  for (const [key, value] of Object.entries(row)) {
+    if (!isMissing(value)) out[targetField(key)] = value;
+  }
+  return out;
+}
+
+Deno.serve(async (req) => {
+  if (req.method === 'OPTIONS') return new Response('ok', { headers: headers(req) });
+  if (req.method !== 'POST') return json(req, { error: 'Method not allowed' }, 405);
+
+  try {
+    const authorization = req.headers.get('Authorization');
+    if (!authorization?.startsWith('Bearer ')) return json(req, { error: 'Authentication required' }, 401);
+
+    const db = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_ANON_KEY')!, {
+      global: { headers: { Authorization: authorization } },
+    });
+
+    const { data: { user }, error: userError } = await db.auth.getUser();
+    if (userError || !user) return json(req, { error: 'Authentication required' }, 401);
+
+    const { data: me } = await db.from('staff').select('role_id').eq('auth_user_id', user.id).eq('is_active', true).maybeSingle();
+    if (!me) return json(req, { error: 'Active PMS staff record required' }, 403);
+
+    const { data: role } = await db.from('staff_role').select('code').eq('id', me.role_id).maybeSingle();
+    if (!role || !ADMIN_ROLES.has(role.code)) return json(req, { error: 'Data administration access required' }, 403);
+
+    const body = await req.json().catch(() => null);
+    const rows = Array.isArray(body?.rows) ? body.rows : [];
+    const table = typeof body?.target_table === 'string' ? body.target_table : null;
+    if (!table || !ALLOWED_TABLES.has(table)) return json(req, { error: 'Invalid or missing target table' }, 400);
+    if (!rows.length || rows.length > 5000) return json(req, { error: 'rows must contain 1 to 5000 records' }, 400);
+
+    const results: Record<string, unknown>[] = [];
+    const seen = new Map<string, { rowNumber: number; fingerprint: string }>();
+
+    for (let i = 0; i < rows.length; i++) {
+      const r = (rows[i] && typeof rows[i] === 'object' ? rows[i] : {}) as Record<string, unknown>;
+      const rowNumber = i + 1;
+      const id = identity(table, r);
+
+      if (!id) {
+        results.push({ row_number: rowNumber, operation: 'REVIEW', target_table: table, confidence: 0, reason: 'No deterministic identity' });
+        continue;
+      }
+
+      const key = identityKey(table, id);
+      const fingerprint = await hash(comparableIncoming(r));
+      const previous = seen.get(key);
+      if (previous) {
+        if (previous.fingerprint === fingerprint) {
+          results.push({ row_number: rowNumber, operation: 'DUPLICATE', target_table: table, confidence: 1, reason: `Duplicate of raw row ${previous.rowNumber}`, duplicate_of_row: previous.rowNumber, proposed_payload: r, payload_hash: fingerprint });
+        } else {
+          results.push({ row_number: rowNumber, operation: 'CONFLICT', target_table: table, confidence: 0, reason: `Conflicting duplicate identity with raw row ${previous.rowNumber}`, conflicting_row: previous.rowNumber, proposed_payload: r, payload_hash: fingerprint });
+        }
+        continue;
+      }
+      seen.set(key, { rowNumber, fingerprint });
+
+      const lookupField = id.field === 'client_id' ? 'id' : id.field;
+      const { data, error: lookupError } = await db.from(table).select('*').eq(lookupField, id.value).limit(2);
+      if (lookupError) {
+        results.push({ row_number: rowNumber, operation: 'REVIEW', target_table: table, confidence: 0, reason: 'Canonical lookup failed' });
+        continue;
+      }
+
+      const incompleteFields: string[] = [];
+      for (const [keyName, value] of Object.entries(r)) {
+        if (isMissing(value) && targetField(keyName) !== id.field) incompleteFields.push(targetField(keyName));
+      }
+
+      if (!data?.length) {
+        results.push({
+          row_number: rowNumber,
+          operation: incompleteFields.length ? 'INCOMPLETE' : 'NEW',
+          target_table: table,
+          target_id: null,
+          confidence: 1,
+          reason: incompleteFields.length ? 'New record contains incomplete fields' : `No existing ${lookupField} found`,
+          incomplete_fields: incompleteFields,
+          proposed_payload: r,
+          payload_hash: await hash(r),
+        });
+        continue;
+      }
+
+      if (data.length > 1) {
+        results.push({ row_number: rowNumber, operation: 'CONFLICT', target_table: table, confidence: 0, reason: `Multiple canonical records matched ${lookupField}`, proposed_payload: r });
+        continue;
+      }
+
+      const existing = data[0] as Record<string, unknown>;
+      const changed: string[] = [];
+      for (const [keyName, value] of Object.entries(r)) {
+        const target = targetField(keyName);
+        if (!(target in existing) || isMissing(value)) continue;
+        if (norm(existing[target]) !== norm(value)) changed.push(target);
+      }
+
+      const operation = changed.length ? 'UPDATE' : (incompleteFields.length ? 'INCOMPLETE' : 'UNCHANGED');
+      results.push({
+        row_number: rowNumber,
+        operation,
+        target_table: table,
+        target_id: existing.id,
+        confidence: 1,
+        reason: operation === 'UPDATE' ? 'Deterministic identity match with non-null field changes' : operation === 'INCOMPLETE' ? 'No destructive change; incoming missing fields require user update' : 'Deterministic identity match; no non-null field changes',
+        changed_fields: changed,
+        incomplete_fields: incompleteFields,
+        expected_existing_hash: await hash(existing),
+        proposed_payload: r,
+        payload_hash: await hash(r),
+      });
+    }
+
+    const counts = Object.fromEntries(OPERATIONS.map((op) => [op, results.filter((r) => r.operation === op).length]));
+    return json(req, { results, counts });
+  } catch {
+    return json(req, { error: 'Request could not be completed' }, 500);
+  }
+});
