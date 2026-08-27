@@ -36,12 +36,15 @@ jobs:
           grep -q "Supabase + Vercel" docs/DEPLOYMENT.md
       - name: Verify unique security migrations
         run: |
-          for version in 015 016 017 019 020; do
+          for version in 015 016 017 018 019 020; do
             test "$(find supabase/migrations -maxdepth 1 -type f -name "${version}_*.sql" | wc -l)" -eq 1
           done
+      - name: Verify no duplicate migration versions
+        run: |
+          test "$(find supabase/migrations -maxdepth 1 -type f -name '*.sql' -printf '%f\n' | sed -nE 's/^([0-9]{3})_.*/\1/p' | sort | uniq -d | wc -l)" -eq 0
       - name: Verify no broad sensitive RLS
         run: |
-          ! grep -R -nE "create policy .*on public\.(invoice|payment|payment_allocation|invoice_payment_allocation|audit_log|audit_history).*using \(true\)" supabase/migrations
+          ! grep -R -nEi "create policy .*on public\.(invoice|payment|payment_allocation|invoice_payment_allocation|audit_log|audit_history).*using \(true\)" supabase/migrations
       - name: Verify authorization boundary
         run: |
           ! grep -nE "create or replace function public\.(has_pms_role|can_access_programme|current_staff_id)" supabase/migrations/017_authorization_boundary_hardening.sql
@@ -50,9 +53,10 @@ jobs:
           grep -q "revoke all on function public.fn_programme_completeness(bigint) from public, anon, authenticated" supabase/migrations/017_authorization_boundary_hardening.sql
       - name: Verify transaction hardening
         run: |
+          grep -q "alter column operation_id set not null" supabase/migrations/018_application_transaction_hardening.sql
           grep -q "alter column operation_id set not null" supabase/migrations/019_application_transaction_hardening.sql
-          grep -q "gen_random_uuid()" supabase/migrations/019_application_transaction_hardening.sql
-          grep -q "with check (false)" supabase/migrations/019_application_transaction_hardening.sql
+          grep -q "gen_random_uuid()" supabase/migrations/018_application_transaction_hardening.sql
+          grep -q "with check (false)" supabase/migrations/018_application_transaction_hardening.sql
       - name: Verify private authorization execution boundary
         run: |
           grep -q "grant usage on schema private to authenticated" supabase/migrations/020_private_authorization_execution.sql
@@ -61,8 +65,8 @@ jobs:
       - name: Verify staging promotion is service-role only
         run: |
           for f in supabase/migrations/*.sql; do
-            if grep -q "promote_stg_" "$f"; then
-              grep -q "revoke.*promote_stg_.*authenticated" "$f" || exit 1
+            if grep -qi "promote_stg_" "$f"; then
+              grep -qiE "revoke[^;]*promote_stg_[^;]*authenticated" "$f" || exit 1
             fi
           done
       - name: Verify browser source has no service-role or PocketBase runtime
