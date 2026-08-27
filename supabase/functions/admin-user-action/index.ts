@@ -2,7 +2,7 @@ import 'jsr:@supabase/functions-js/edge-runtime.d.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
 const allowedOrigins = new Set([Deno.env.get('APP_ORIGIN') ?? '', Deno.env.get('VITE_APP_ORIGIN') ?? ''].filter(Boolean));
-function headers(req: Request) { const origin = req.headers.get('Origin') ?? ''; const h: Record<string,string> = {'Access-Control-Allow-Headers':'authorization, x-client-info, apikey, content-type','Vary':'Origin'}; if (allowedOrigins.has(origin)) h['Access-Control-Allow-Origin']=origin; return h; }
+function headers(req: Request) { const origin = req.headers.get('Origin') ?? ''; const h: Record<string,string> = {'Access-Control-Allow-Headers':'authorization, x-client-info, apikey, content-type','Access-Control-Allow-Methods':'POST, OPTIONS','Vary':'Origin'}; if (allowedOrigins.has(origin)) h['Access-Control-Allow-Origin']=origin; return h; }
 function json(body: unknown, status: number, h: Record<string,string>) { return new Response(JSON.stringify(body), { status, headers: {...h, 'Content-Type':'application/json'} }); }
 
 Deno.serve(async req => {
@@ -14,8 +14,8 @@ Deno.serve(async req => {
   const caller=createClient(url,anon,{global:{headers:{Authorization:`Bearer ${token}`}}});
   const admin=createClient(url,service,{auth:{autoRefreshToken:false,persistSession:false}});
   const {data:{user},error:ae}=await caller.auth.getUser(token); if(ae||!user) return json({error:'Invalid session'},401,h);
-  const {data:me}=await admin.from('staff').select('id,staff_role:staff_role(code)').eq('auth_user_id',user.id).maybeSingle();
-  if(!['SUPER_ADMIN','ADMIN'].includes(me?.staff_role?.code)) return json({error:'Administrator access required'},403,h);
+  const {data:me}=await admin.from('staff').select('id,is_active,staff_role:staff_role(code)').eq('auth_user_id',user.id).maybeSingle();
+  if(me?.is_active !== true || me?.staff_role?.code !== 'SUPER_ADMIN') return json({error:'Super Admin access required'},403,h);
   const body=await req.json(), action=String(body?.action??'').toUpperCase();
   if(action==='APPROVE'||action==='DECLINE') {
    const requestId=Number(body?.request_id); if(!Number.isInteger(requestId)||requestId<1) return json({error:'Invalid request'},400,h);
