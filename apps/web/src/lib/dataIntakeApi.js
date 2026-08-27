@@ -15,6 +15,7 @@ async function invoke(name, body) {
   return payload;
 }
 
+export const ingestRawRows = (rows, programmeId, fileName) => invoke('data-intake-ingest', { rows, programme_id: programmeId, file_name: fileName });
 export const analyseRawRows = (rows, targetTable) => invoke('data-intake-analyze', { rows, target_table: targetTable });
 export const compareRawRows = (rows, targetTable) => invoke('data-intake-compare', { rows, target_table: targetTable });
 export const promoteApprovedChanges = (items, changeSetId) => invoke('data-intake-promote', { items, change_set_id: changeSetId });
@@ -29,4 +30,4 @@ export async function uploadRawDataFile(file, { programmeId, bucket = 'pms-docum
   return path;
 }
 
-export default { analyseRawRows, compareRawRows, promoteApprovedChanges, uploadRawDataFile };
+export default { ingestRawRows, analyseRawRows, compareRawRows, promoteApprovedChanges, uploadRawDataFile };
