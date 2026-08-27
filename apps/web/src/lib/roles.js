@@ -6,6 +6,7 @@ import {
 export const ROLES = {
   super_admin: 'Super Admin',
   manager: 'Manager',
+  masb_team: 'MASB Team',
   staff: 'Staff / PIC',
   finance: 'Finance',
   sales: 'Sales',
@@ -16,7 +17,9 @@ export const ROLES = {
 
 const ALL = Object.keys(ROLES);
 const MANAGEMENT = ['super_admin', 'manager'];
-const OPERATIONAL = [...MANAGEMENT, 'staff'];
+// MASB_TEAM is the general operational role: it can use every normal PMS module,
+// but must never inherit the Administration module reserved for Super Admin.
+const OPERATIONAL = [...MANAGEMENT, 'masb_team', 'staff'];
 
 export const NAV_SECTIONS = [
   { label: 'Overview', items: [{ path: '/', label: 'Dashboard', icon: LayoutDashboard, roles: ALL }] },
@@ -39,6 +42,8 @@ export const NAV_SECTIONS = [
     { path: '/action-items', label: 'Action Items', icon: CheckSquare, roles: ALL },
     { path: '/reports', label: 'Programme Reports', icon: BarChart3, roles: [...OPERATIONAL, 'finance', 'sales', 'viewer'] },
   ] },
+  // Administration is deliberately exclusive to Super Admin. MASB_TEAM must not
+  // inherit user approval/removal, user administration, or bulk system administration.
   { label: 'System', items: [{ path: '/administration', label: 'Administration', icon: Settings, roles: ['super_admin'] }] },
 ];
 
