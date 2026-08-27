@@ -4,10 +4,11 @@ import supabase from '@/lib/supabaseClient';
 const AuthContext = createContext(null);
 
 const mapDbRoleToUiRole = (code) => {
-  const role = String(code || '').toLowerCase();
+  const role = String(code || '').trim().toLowerCase();
   if (role === 'super_admin' || role === 'admin') return 'super_admin';
   if (role === 'manager') return 'manager';
-  if (role === 'masb_team' || role === 'masbteam' || role === 'staff' || role === 'pic') return 'staff';
+  if (role === 'masb_team' || role === 'masbteam') return 'masb_team';
+  if (role === 'staff' || role === 'pic') return 'staff';
   if (['finance', 'sales', 'programme_pic', 'trainer', 'viewer'].includes(role)) return role;
   return 'viewer';
 };
