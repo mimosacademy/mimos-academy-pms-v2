@@ -55,19 +55,36 @@ begin
     raise exception 'Storage insert policy is missing';
   end if;
 
-  -- Authorization helpers used by RLS must remain executable by authenticated,
-  -- but must not be exposed to anon.
-  if not has_function_privilege('authenticated','private.has_role(text[])','execute') then
-    raise exception 'authenticated cannot execute private.has_role';
+  -- Authorization helpers used by RLS live in private schema. They are
+  -- security-definer helpers with no anon/public execute grant.
+  if not has_function_privilege('authenticated','private.has_pms_role(text[])','execute') then
+    raise exception 'authenticated cannot execute private.has_pms_role';
   end if;
-  if has_function_privilege('anon','private.has_role(text[])','execute') then
-    raise exception 'anon can execute private.has_role';
+  if has_function_privilege('anon','private.has_pms_role(text[])','execute') then
+    raise exception 'anon can execute private.has_pms_role';
   end if;
   if not has_function_privilege('authenticated','private.can_access_programme(bigint)','execute') then
     raise exception 'authenticated cannot execute private.can_access_programme';
   end if;
   if has_function_privilege('anon','private.can_access_programme(bigint)','execute') then
     raise exception 'anon can execute private.can_access_programme';
+  end if;
+  if not has_function_privilege('authenticated','private.current_staff_role()','execute') then
+    raise exception 'authenticated cannot execute private.current_staff_role';
+  end if;
+  if not has_function_privilege('authenticated','private.is_pms_user()','execute') then
+    raise exception 'authenticated cannot execute private.is_pms_user';
+  end if;
+
+  -- Public compatibility helpers must be invoker-security, never SECURITY DEFINER.
+  if exists (
+    select 1 from pg_proc p
+    join pg_namespace n on n.oid=p.pronamespace
+    where n.nspname='public'
+      and p.proname in ('current_staff_id','current_staff_role','has_pms_role','can_access_programme')
+      and p.prosecdef
+  ) then
+    raise exception 'Public authorization compatibility helper remains SECURITY DEFINER';
   end if;
 
   if has_function_privilege('anon','public.is_admin()','execute') then
