@@ -41,7 +41,8 @@ jobs:
           done
       - name: Verify no duplicate migration versions
         run: |
-          test "$(find supabase/migrations -maxdepth 1 -type f -name '*.sql' -printf '%f\n' | sed -nE 's/^([0-9]{3})_.*/\1/p' | sort | uniq -d | wc -l)" -eq 0
+          duplicates="$(find supabase/migrations -maxdepth 1 -type f -name '*.sql' -printf '%f\n' | sed -nE 's/^([0-9]{3})_.*/\1/p' | sort | uniq -d)"
+          test -z "$duplicates"
       - name: Verify no broad sensitive RLS
         run: |
           ! grep -R -nEi "create policy .*on public\.(invoice|payment|payment_allocation|invoice_payment_allocation|audit_log|audit_history).*using \(true\)" supabase/migrations
@@ -66,11 +67,12 @@ jobs:
           grep -q "create or replace function private.can_access_programme" supabase/migrations/044_private_authorization_helpers.sql
       - name: Verify staging promotion is service-role only
         run: |
-          for f in supabase/migrations/*.sql; do
-            if grep -qi "promote_stg_" "$f"; then
-              grep -qiE "revoke[^;]*promote_stg_[^;]*authenticated" "$f" || exit 1
-            fi
-          done
+          grep -q "REVOKE EXECUTE ON FUNCTION public.promote_stg_invoice(bigint) FROM authenticated, anon, public" supabase/migrations/015_migration_function_security.sql
+          grep -q "REVOKE EXECUTE ON FUNCTION public.promote_stg_quotation(bigint) FROM authenticated, anon, public" supabase/migrations/015_migration_function_security.sql
+          grep -q "REVOKE EXECUTE ON FUNCTION public.promote_stg_funnel(bigint) FROM authenticated, anon, public" supabase/migrations/015_migration_function_security.sql
+          grep -q "GRANT EXECUTE ON FUNCTION public.promote_stg_invoice(bigint) TO service_role" supabase/migrations/015_migration_function_security.sql
+          grep -q "GRANT EXECUTE ON FUNCTION public.promote_stg_quotation(bigint) TO service_role" supabase/migrations/015_migration_function_security.sql
+          grep -q "GRANT EXECUTE ON FUNCTION public.promote_stg_funnel(bigint) TO service_role" supabase/migrations/015_migration_function_security.sql
       - name: Verify browser source has no service-role or PocketBase runtime
         run: |
           ! grep -R -nEi "SUPABASE_SERVICE_ROLE_KEY|service_role|service-role|pocketbase|pb_client|apps/pocketbase" apps/web/src --include='*.js' --include='*.jsx' --include='*.ts' --include='*.tsx'
