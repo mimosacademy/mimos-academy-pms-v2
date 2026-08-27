@@ -1,7 +1,12 @@
 -- 044_private_authorization_helpers.sql
 -- Reconcile the production authorization-helper dependency with the repository
--- migration chain. RLS uses private security-definer helpers; public helpers are
--- retained only as safe, non-privileged compatibility wrappers.
+-- migration chain. RLS uses private security-definer helpers; browser-facing
+-- helpers are only caller-scoped compatibility wrappers.
+--
+-- IMPORTANT: this migration is part of the repository chain and is intentionally
+-- self-contained: private.has_role() is created before any helper that depends
+-- on it. Production already has an equivalent helper from the reconciliation
+-- migrations, so this is safe as a forward repository-chain definition.
 
 begin;
 
@@ -33,10 +38,11 @@ as $$
   join public.staff_role r on r.id = s.role_id
   where s.auth_user_id = (select auth.uid())
     and s.is_active = true
+    and r.is_active = true
   limit 1
 $$;
 
-create or replace function private.is_pms_user()
+create or replace function private.has_role(p_roles text[])
 returns boolean
 language sql
 stable
@@ -49,7 +55,24 @@ as $$
     join public.staff_role r on r.id = s.role_id
     where s.auth_user_id = (select auth.uid())
       and s.is_active = true
-      and nullif(btrim(r.code), '') is not null
+      and r.is_active = true
+      and upper(r.code) = any (
+        select upper(btrim(x))
+        from unnest(coalesce(p_roles, '{}'::text[])) x
+        where nullif(btrim(x), '') is not null
+      )
+  )
+$$;
+
+create or replace function private.is_pms_user()
+returns boolean
+language sql
+stable
+security definer
+set search_path = ''
+as $$
+  select private.has_role(
+    array['SUPER_ADMIN','ADMIN','MANAGER','FINANCE','SALES','MASB_TEAM','PIC','TRAINER','VIEWER']
   )
 $$;
 
@@ -60,7 +83,7 @@ stable
 security definer
 set search_path = ''
 as $$
-  select coalesce(private.current_staff_role() = any(array['SUPER_ADMIN','ADMIN']), false)
+  select private.has_role(array['SUPER_ADMIN','ADMIN'])
 $$;
 
 create or replace function private.has_pms_role(p_roles text[])
@@ -70,14 +93,7 @@ stable
 security definer
 set search_path = ''
 as $$
-  select coalesce(
-    private.current_staff_role() = any (
-      select upper(btrim(x))
-      from unnest(coalesce(p_roles, '{}'::text[])) x
-      where nullif(btrim(x), '') is not null
-    ),
-    false
-  )
+  select private.has_role(p_roles)
 $$;
 
 create or replace function private.can_access_programme(p_programme_id bigint)
@@ -92,14 +108,15 @@ as $$
     from public.programme p
     where p.id = p_programme_id
       and (
-        private.has_pms_role(array['SUPER_ADMIN','ADMIN','MANAGER','VIEWER','FINANCE','SALES','MASB_TEAM'])
-        or (private.has_pms_role(array['PIC','TRAINER']) and p.pic_id = private.current_staff_id())
+        private.has_role(array['SUPER_ADMIN','ADMIN','MANAGER','VIEWER','FINANCE','SALES','MASB_TEAM'])
+        or (private.has_role(array['PIC','TRAINER']) and p.pic_id = private.current_staff_id())
       )
   )
 $$;
 
 revoke all on function private.current_staff_id() from public, anon, authenticated;
 revoke all on function private.current_staff_role() from public, anon, authenticated;
+revoke all on function private.has_role(text[]) from public, anon, authenticated;
 revoke all on function private.is_pms_user() from public, anon, authenticated;
 revoke all on function private.is_admin() from public, anon, authenticated;
 revoke all on function private.has_pms_role(text[]) from public, anon, authenticated;
@@ -108,13 +125,14 @@ revoke all on function private.can_access_programme(bigint) from public, anon, a
 grant usage on schema private to authenticated;
 grant execute on function private.current_staff_id() to authenticated;
 grant execute on function private.current_staff_role() to authenticated;
+grant execute on function private.has_role(text[]) to authenticated;
 grant execute on function private.is_pms_user() to authenticated;
 grant execute on function private.is_admin() to authenticated;
 grant execute on function private.has_pms_role(text[]) to authenticated;
 grant execute on function private.can_access_programme(bigint) to authenticated;
 
--- Public compatibility helpers are deliberately SECURITY INVOKER. They expose
--- only caller-scoped authorization results and never execute with owner rights.
+-- Public compatibility helpers are deliberately SECURITY INVOKER. They never
+-- execute with owner rights; the actual authorization logic remains private.
 create or replace function public.current_staff_id()
 returns bigint
 language sql
