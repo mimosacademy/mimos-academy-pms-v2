@@ -1,69 +1,217 @@
-# V2 Production Readiness
+# MIMOS Academy PMS V2 — Production Readiness
 
-## Release gate
+## Release decision
 
-The application is production-ready only when all release gates are green:
+PMS V2 is production-ready only when every applicable gate below is green. A green frontend build or a clean database security scan alone is not sufficient evidence.
 
-1. Frontend lint and production build pass in GitHub Actions.
-2. PocketBase migrations apply successfully to a fresh instance.
-3. PocketBase boots and `/api/health` responds successfully.
-4. Superuser authentication succeeds in the fresh instance.
-5. All seven application roles are exercised against real PocketBase API rules.
-6. Financial integrity is exercised against real API writes: valid payment succeeds, overpayment is rejected, and an invoice cannot be reduced below recorded collections.
-7. End-to-end business flow is verified from Opportunity → Quotation → PO → Programme → Training → Invoice → Payment.
-8. Production VPS and Vercel environment variables are configured and the deployed frontend can reach the HTTPS PocketBase endpoint.
-9. A production-data backup has been restored successfully to a disposable PocketBase instance.
+## 1. Architecture gate
 
-## Automated gates
+Authoritative production architecture:
 
-The `V2 Quality Gate` workflow validates:
+`React/Vite → Vercel → Supabase Auth / PostgreSQL / Storage / Realtime`
 
-- React/Vite lint and production build.
-- Typed PocketBase migration constructors.
-- No tracked `pb_data`.
-- No production `demoAction` references.
-- No production imports of mock data.
-- Canonical unique business identifiers and duplicate-migration detection.
-- V1 migration PHP syntax and opportunity-stage mapping.
-- PocketBase financial hook syntax.
-- Role-matrix smoke-script syntax.
-- Fresh PocketBase migration.
-- PocketBase version consistency.
-- PocketBase health and superuser authentication.
-- Seven-role authorization matrix.
-- Financial API integrity: payment overage and invoice-reduction protection.
-
-## Runtime rules
-
-- Never commit `pb_data/`, production credentials, or `.env` files.
-- `VITE_POCKETBASE_URL` must point to the HTTPS production PocketBase endpoint.
-- PocketBase must remain bound to localhost on the VPS and be exposed publicly through NGINX/HTTPS.
-- Backend role rules are enforced in PocketBase, not only in the React UI.
-- Backups must be tested by restoring to a disposable PocketBase instance.
-- Already-applied migrations must not be rewritten; add forward migrations instead.
-
-## Data integrity checks
-
-- Relations must reference existing records.
-- Business identifiers are unique at the database layer.
-- Invoice outstanding amount must never be negative.
-- Payment totals must not exceed the invoice total.
-- Failed payments do not count toward collection totals.
-- An invoice cannot be reduced below already recorded valid collections.
-- Opportunity probability is constrained to 0–100.
-- Programme progress is constrained to 0–100.
-- Dates used for operational KPIs are calculated from the current runtime date.
-
-## Manual environment gates
-
-The GitHub workflow cannot prove the health of the real VPS/Vercel deployment or the safety of production data. Before release, execute `docs/DEPLOYMENT.md` against the target infrastructure.
+PocketBase is legacy/migration reference material only. It is not a production runtime or security boundary.
 
 Required evidence:
 
-- `https://api-pms.mimos-academy.com/api/health` returns success.
-- Frontend production URL loads and authenticates.
-- All seven roles can authenticate with their intended permissions.
-- A disposable backup restore boots successfully.
-- Full business-flow test passes using non-production test data.
+- No production frontend dependency on PocketBase.
+- No PocketBase production deployment/runtime requirement.
+- Vercel browser environment contains only the Supabase URL and publishable key.
+- Supabase service-role/database credentials are never exposed to the browser.
 
-A missing workflow-run result is not evidence that CI passed. A successful CI run is also not evidence that the real production environment is healthy.
+## 2. Application build gate
+
+Required:
+
+- Frontend lint passes.
+- Production build passes.
+- Latest deployment is successful and READY.
+- Dashboard/home route renders without a white-screen failure.
+- No blocking console/runtime error is observed during the smoke test.
+
+## 3. Authentication and role gate
+
+Every PMS user must have:
+
+- a Supabase Auth identity;
+- a matching `public.staff.auth_user_id`;
+- `is_active = true`;
+- a valid active `staff_role`.
+
+`public.staff.role_id` and the active staff-role relationship are the authoritative PMS authorization source. Browser metadata/profile role fields must not grant privileges.
+
+Roles to verify:
+
+- SUPER_ADMIN
+- ADMIN
+- MANAGER
+- FINANCE
+- SALES
+- MASB_TEAM
+- PIC
+- TRAINER
+- VIEWER
+
+Required negative tests:
+
+- Authenticated but unprovisioned users cannot access PMS data.
+- Non-admin users cannot modify role, active status, auth identity, or equivalent security-sensitive staff/profile fields.
+- MASB_TEAM does not receive Super Admin administration privileges.
+
+## 4. RLS and programme-isolation gate
+
+PostgreSQL RLS is the security boundary.
+
+Required evidence:
+
+- No broad `USING (true)` policy remains on sensitive business tables.
+- Programme-scoped roles cannot read or mutate another programme's records.
+- PIC/TRAINER programme access follows their authorised assignment.
+- VIEWER has read-only access only to data explicitly permitted by the business role model.
+- Financial tables are restricted to authorised financial/management/operational roles according to the approved role matrix.
+- `anon` has no unintended table or privileged-function access.
+- Security-definer helpers are private/internal and cannot be abused as public RPCs.
+
+## 5. CRUD and workflow gate
+
+Exercise the normal application flows, not only direct SQL:
+
+`Opportunity → Quotation → Purchase Order → Programme → Training → Invoice → Payment`
+
+Verify for each applicable role:
+
+- Create.
+- Read.
+- Update.
+- Delete where permitted.
+- Status transitions.
+- Programme reassignment/cross-programme attempts.
+- Invalid IDs and missing required fields.
+- Unauthorized direct API attempts.
+
+UI visibility is not evidence of authorization; every mutation must remain protected by database policy.
+
+## 6. Import / Excel gate
+
+Verify:
+
+- Valid rows are classified correctly as `NEW`, `UPDATE`, or `UNCHANGED`.
+- Blank/NULL incoming fields do not erase authoritative existing values.
+- Duplicate rows inside one import batch are detected.
+- Canonical duplicates/conflicts are detected.
+- Missing deterministic identity routes to review rather than unsafe mutation.
+- `DUPLICATE`, `CONFLICT`, `INCOMPLETE`, `REVIEW`, and `REJECT` cannot enter the promotion queue as normal `NEW`/`UPDATE` operations.
+- Canonical comparison hash and promotion hash use the same canonical representation.
+- Import retries are idempotent.
+
+## 7. Financial integrity gate
+
+Server-side/database enforcement must prove:
+
+- Valid payment succeeds.
+- Payment amount must be positive.
+- Payment cannot exceed the invoice amount after valid collections.
+- Allocation cannot exceed the payment amount.
+- Allocation cannot cause total collections to exceed invoice total.
+- Duplicate `operation_id` cannot create a second financial transaction.
+- Invoice outstanding cannot become negative.
+- Failed/invalid financial operations do not alter collection totals.
+- Financial relationships are authoritative from the invoice/payment records rather than browser-supplied programme/client values.
+
+## 8. Audit gate
+
+Verify:
+
+- Important financial/business mutations generate database audit events.
+- Application roles cannot directly INSERT/UPDATE/DELETE protected audit records.
+- Audit records cannot be used by the browser as a writable history table.
+- Actor and event timestamps are generated from trusted server/database context where applicable.
+
+## 9. Storage gate
+
+Object paths must be programme-scoped:
+
+`programmes/{programme_id}/...`
+
+Verify:
+
+- Upload requires a valid programme.
+- Upload is permitted only for an authorised programme.
+- A user cannot read/download another programme's document.
+- Malformed paths cannot trigger unsafe casts or bypass authorization.
+- Signed URL lifetime does not exceed the approved maximum.
+
+## 10. Migration/reproducibility gate
+
+Required:
+
+- Migration filenames/versions are unique.
+- Already-applied migrations are never rewritten.
+- Production-only remediation is represented by forward migrations or documented reconciliation migrations.
+- A disposable Supabase environment can apply the repository migration chain without hidden production-only prerequisites.
+- Production schema and repository migrations are reconciled and documented.
+
+A migration that succeeds only because an object already exists in production is not considered reproducible.
+
+## 11. CI/CD gate
+
+The quality gate must validate the Supabase/Vercel architecture, including:
+
+- lint/build;
+- migration numbering and ordering;
+- sensitive RLS checks;
+- privileged-function exposure;
+- financial-integrity markers/tests;
+- storage security markers;
+- PocketBase runtime-reference detection;
+- secret scanning.
+
+A missing workflow result is not evidence of success.
+
+## 12. Backup / recovery gate
+
+Do not claim disaster-recovery readiness until a restore drill has succeeded.
+
+Required evidence:
+
+- database backup exists according to the actual Supabase plan;
+- backup restored to a disposable environment;
+- expected schema, RLS, authentication and representative programme/financial flow verified after restore.
+
+## 13. Production smoke test
+
+After every database/security release, verify:
+
+1. Super Admin login and administration access.
+2. Manager access.
+3. Finance financial access.
+4. Sales pipeline access.
+5. MASB_TEAM normal operational access without Super Admin administration.
+6. PIC programme-scoped access.
+7. Trainer programme/training access.
+8. Viewer read-only access.
+9. Viewer direct invoice/payment access is denied where required by the role matrix.
+10. PIC cross-programme access is denied.
+11. Valid payment succeeds.
+12. Overpayment is rejected server-side.
+13. Duplicate payment operation is idempotent/rejected safely.
+14. Excess allocation is rejected.
+15. Cross-programme document access is denied.
+16. Non-admin security-field self-update is denied.
+17. Audit event is generated and remains application-immutable.
+18. Dashboard and critical routes render successfully.
+
+## 14. Current known exclusions/blockers
+
+Leaked Password Protection is excluded from the acceptance criteria by project direction.
+
+The following remain release blockers until independently evidenced:
+
+- GitHub repository visibility must be changed from PUBLIC to PRIVATE if repository confidentiality is required.
+- Full role-by-role E2E requires controlled test identities for all applicable roles.
+- Migration reproducibility must be demonstrated against a disposable Supabase environment.
+- Backup/restore readiness must not be claimed without a successful restore drill.
+
+## Final rule
+
+Do not declare **PRODUCTION READY** because code has been committed, CI is green, or Security Advisor is clean. Production readiness requires evidence across application behaviour, authorization, data integrity, financial invariants, storage, migrations, backup/recovery and deployment.
