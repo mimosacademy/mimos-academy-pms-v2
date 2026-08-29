@@ -20,19 +20,32 @@ kredensial dalam fail ini atau dalam chat.**
 
 ## 2. Apply migrations
 
-Guna **Supabase CLI** (login dengan `supabase login` dan access token) atau **SQL Editor**:
+> **PENTING — jangan guna `supabase db push` untuk repo ini.**
+> Fail migration di repo guna prefix 3-digit (`001_...`–`048_...`), manakala Supabase CLI
+> merekod versi dalam format timestamp (cth `20260827033124`). Perbezaan format ini membuatkan
+> CLI **tidak dapat menyelaraskannya** dengan betul. Oleh itu, guna **runner deterministik**
+> atau **SQL Editor mengikut urutan**.
 
+### Pilihan A — Runner deterministik (disyorkan)
 ```bash
-supabase login
-supabase link --project-ref <YOUR_PROJECT_REF>
-supabase db push          # apply migrations in supabase/migrations (001→048)
+# salin fail migration mengikut urutan (bukan CLI renumbering)
+SUPABASE_DB_URL="postgresql://..." scripts/apply-migrations.sh
 ```
+- `scripts/apply-migrations.sh` menerapkan **45** fail dalam urutan nama, `ON_ERROR_STOP=1`
+  (berhenti pada ralat pertama).
+- `scripts/migration-order.txt` = senarai 45 fail dalam urutan tepat.
+- `scripts/migration-checksums.txt` = SHA-256 setiap fail (untuk pengesahan integriti).
+- Untuk juga menjalankan regression checks selepas itu: `RUN_REGRESSION=1 SUPABASE_DB_URL=... scripts/apply-migrations.sh`.
 
-> Jika guna **SQL Editor**: buka tiap fail `supabase/migrations/*.sql` dalam urutan nama dan
-> jalankan. Jangan ubah fail yang telah diguna; bina migration baharu untuk perubahan.
+### Pilihan B — SQL Editor (manual)
+Buka `.handoff/DEPLOY_RUNBOOK.md` → bahagian `scripts/apply-migrations.sql` untuk senarai
+urutan penuh, dan jalankan setiap fail di sebaliknya satu per satu dalam urutan itu. Berhenti
+pada ralat pertama.
 
-Sesudah migrate, sahkan: **45** fail migration, dan jalankan read-only checks di
-`supabase/tests/*.sql`.
+> Jangan ubah fail migration yang telah diguna; bina migration baharu untuk perubahan.
+
+Sesudah migrate, jalankan read-only checks di `supabase/tests/*.sql` (11 fail) dan sahkan
+**45** migration diterapkan.
 
 ## 3. Storage bucket
 
