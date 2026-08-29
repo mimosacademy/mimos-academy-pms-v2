@@ -63,18 +63,23 @@ const decimalNegate = (value) => {
 export const decimalSubtract = (a, b) =>
   decimalAdd(a, decimalNegate(b));
 
+// Matches scaled-zero strings produced by decimal math, e.g. '0', '0.00',
+// '0.000', '-0.0'. A simple `result === '0'` check is insufficient because the
+// helpers normalise operands to a common scale (decimalAdd('1.00','-1') === '0.00').
+const isScaledZero = (value) => /^-?0+(?:\.0*)?$/.test(decimalToString(value));
+
 export const decimalCompare = (a, b) => {
   const left = decimalToString(a);
   const right = decimalToString(b);
   const result = decimalSubtract(left, right);
 
-  if (result === '0') return 0;
+  if (isScaledZero(result)) return 0;
 
   return result.startsWith('-') ? -1 : 1;
 };
 
 export const decimalIsZero = (value) =>
-  decimalCompare(value, '0') === 0;
+  isScaledZero(value);
 
 export const decimalIsPositive = (value) =>
   decimalCompare(value, '0') > 0;
@@ -165,7 +170,25 @@ const decimalDivideByInteger = (value, divisor) => {
   const remainder = numerator % divisorBigInt;
 
   if (sourceScale === 0) {
-    return `${negative ? '-' : ''}${quotient.toString()}`;
+    let result = `${negative ? '-' : ''}${quotient.toString()}`;
+
+    // A whole-number input with a remainder (e.g. 2500000 / 1e6) must still
+    // surface the fractional part instead of silently truncating to '2'.
+    if (remainder !== 0n) {
+      let remainderValue = remainder;
+      let extraFraction = '';
+
+      for (let index = 0; index < 12; index += 1) {
+        remainderValue *= 10n;
+        extraFraction += (remainderValue / divisorBigInt).toString();
+        remainderValue %= divisorBigInt;
+        if (remainderValue === 0n) break;
+      }
+
+      result = `${result}.${extraFraction}`;
+    }
+
+    return result;
   }
 
   const quotientText = quotient
@@ -262,7 +285,7 @@ export const formatRMCompact = (amount) => {
 
   if (absoluteInteger >= million) {
     const scaled = decimalRoundToScale(
-      decimalDivideByInteger(normalized, million),
+      decimalDivideByInteger(normalized, Number(million)),
       2
     );
 
@@ -271,7 +294,7 @@ export const formatRMCompact = (amount) => {
 
   if (absoluteInteger >= thousand) {
     const scaled = decimalRoundToScale(
-      decimalDivideByInteger(normalized, thousand),
+      decimalDivideByInteger(normalized, Number(thousand)),
       1
     );
 

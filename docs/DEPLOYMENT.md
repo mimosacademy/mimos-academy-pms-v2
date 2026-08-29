@@ -6,11 +6,25 @@ Production architecture is:
 
 `React/Vite → Vercel → Supabase Auth / PostgreSQL / Storage / Realtime`
 
-PocketBase is **legacy only** and must not be started, deployed, referenced by Vercel, or used as a production backend.
+PocketBase is **legacy only** and must not be started, deployed, referenced by Vercel, or
+used as a production backend. Its runtime binary is git-ignored and not tracked, and the
+retired VPS/systemd/nginx/backup deployment files live under `legacy/pocketbase-deployment/`
+(see `legacy/README.md`).
 
 ## 2. Frontend
 
 Deploy `apps/web` as the Vercel project root.
+
+Vercel project settings:
+
+- Root Directory: `apps/web`
+- Framework Preset: `Vite`
+- Install Command: `npm ci`
+- Build Command: `npm run build`
+
+`apps/web/vercel.json` supplies the SPA rewrite plus security headers (CSP, HSTS,
+`X-Content-Type-Options`, `X-Frame-Options`, `Referrer-Policy`, `Permissions-Policy`) and
+immutable caching for `/assets/*`.
 
 Required browser-side environment variables:
 
@@ -19,34 +33,48 @@ VITE_SUPABASE_URL=https://YOUR_PROJECT_REF.supabase.co
 VITE_SUPABASE_PUBLISHABLE_KEY=YOUR_SUPABASE_PUBLISHABLE_KEY
 ```
 
-Never put `SUPABASE_SERVICE_ROLE_KEY` in browser/Vite environment variables.
+Never put `SUPABASE_SERVICE_ROLE_KEY` in browser/Vite environment variables. See
+`docs/ENVIRONMENT.md`.
 
 ## 3. Database migrations
 
-Apply Supabase migrations in filename order.
+Apply `supabase/migrations/*.sql` in filename order (001 → 048).
 
-Security remediation chain:
+Locally, reset + apply the whole chain to a disposable Supabase stack:
 
-```text
-supabase/migrations/015_migration_function_security.sql
-supabase/migrations/016_security_integrity_hardening.sql
-supabase/migrations/017_authorization_boundary_hardening.sql
+```bash
+npm run supabase:start   # Supabase CLI + Docker
+npm run db:regression    # supabase db reset + apply migrations + run regression checks
 ```
 
-Migration `015_migration_function_security.sql` keeps staging promotion service-role-only. Migration `016_security_integrity_hardening.sql` establishes the broad RLS/financial/storage hardening. Migration `017_authorization_boundary_hardening.sql` is a **forward-only follow-up** that closes self-service privilege-escalation paths and removes legacy browser RPC exposure.
+Security remediation is spread across the chain, notably:
+
+```text
+015_migration_function_security.sql        # staging promotion service-role only
+016_security_integrity_hardening.sql       # broad RLS / financial / storage hardening
+017_authorization_boundary_hardening.sql   # closes self-service privilege escalation
+018/019_application_transaction_hardening.sql
+020_private_authorization_execution.sql    # private authorization execution boundary
+044_private_authorization_helpers.sql      # private RLS helper definitions
+```
+
+Migration `015` keeps staging promotion service-role-only. `016` establishes the broad
+RLS/financial/storage hardening. `017` is a **forward-only follow-up** that closes
+self-service privilege-escalation paths and removes legacy browser RPC exposure.
 
 Never edit an already-applied migration. Add a new forward migration.
 
 Before applying a new security migration to production:
 
 1. Export/backup the current database.
-2. Apply the migration in a disposable/staging project first.
+2. Apply the migration in a disposable/staging project first (`npm run db:regression` or
+   the `supabase-migrations` CI job).
 3. Verify the migration completes without SQL errors.
 4. Test each role in the role matrix.
 5. Test invoice/payment creation, overpayment rejection and allocation limits.
 6. Test Storage access with two different programme IDs.
 7. Run Supabase security advisors and resolve any new high/critical findings.
-8. Only then apply to production.
+8. Only then apply to production (`supabase db push`).
 
 ## 4. Authentication and roles
 
@@ -99,16 +127,18 @@ The programme ID in the object path is part of the authorization decision.
 
 ## 7. CI/CD
 
-CI must test the Supabase architecture, not PocketBase. Minimum release gate:
+CI (`.github/workflows/quality.yml`) tests the Supabase architecture, not PocketBase. It
+runs on push to `main`/`release/**` and on pull requests to `main`:
 
-- `npm ci` after a committed, verified `package-lock.json` is available.
-- Build and lint the Vite application.
-- Apply/reset Supabase migrations in a disposable test environment.
-- Run RLS/security tests.
-- Run financial-invariant tests.
-- Run secret scanning.
+- `web` — `npm ci` (root workspace lockfile), `npm run lint`, `npm run test`, `npm run build`.
+- `supabase-static-security` — fast marker/RLS/secrets checks over the migration source.
+- `supabase-migrations` — boots a disposable local Supabase stack (Supabase CLI), applies
+  the full migration chain, and runs the regression/security checks under `supabase/tests/`
+  via `scripts/db-regression.sh`. Requires Docker (available on GitHub-hosted runners).
+- `deployment-config-check` — verifies `vercel.json`, `supabase/config.toml`,
+  `apps/web/.env.example` exist and that no PocketBase deployment language remains.
 
-Until the Supabase test environment is configured, use the manual security checklist in `docs/PRODUCTION_READINESS.md` and do not treat a green PocketBase workflow as production evidence.
+`npm run verify` runs the application gate locally (lint + test + build).
 
 ## 8. Incident / credential response
 
