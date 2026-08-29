@@ -1,21 +1,51 @@
+# Dependencies
 node_modules/
+apps/*/node_modules/
+
+# Build output
 dist/
+build/
+output/
+.vercel/
+.next/
+apps/web/dist/
+
+# Environment / secrets — never commit real values
 .env
 .env.*
 !.env.example
+apps/web/.env.local
+supabase/.env
+supabase/.temp/
 
-# PocketBase production data / secrets
+# Legacy PocketBase runtime — production data, secrets, binaries
+# PocketBase is legacy-only. Runtime files must never be committed.
 apps/pocketbase/pb_data/
 apps/pocketbase/pb_snapshots/
 apps/pocketbase/pb_hooks/*.log
+apps/pocketbase/pocketbase
+apps/pocketbase/pocketbase.exe
 
-# OS/editor
+# Local databases / backups
+backups/
+*.zip
+*.tar.gz
+*.sqlite
+*.sqlite3
+
+# Supabase CLI local artifacts
+supabase/.temp/
+supabase/functions/.env*
+
+# Test / coverage
+coverage/
+*.log
+npm-debug.log*
+yarn-error.log*
+
+# Editor / OS
 .DS_Store
 Thumbs.db
 .vscode/
 .idea/
-
-# local backups
-backups/
-*.zip
-*.tar.gz
+*.swp

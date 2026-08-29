@@ -8,11 +8,18 @@
     "dev": "npm run dev --prefix apps/web",
     "start": "npm run start --prefix apps/web",
     "lint": "npm run lint --prefix apps/web",
+    "test": "npm run test --prefix apps/web",
+    "test:watch": "npm run test:watch --prefix apps/web",
+    "verify": "npm run lint && npm run test && npm run build",
     "validate:source": "python tools/migration/validate_source_json.py readme/Excel to json",
     "manifest:source": "python tools/migration/build_source_manifest.py 'readme/Excel to json' --output tools/migration/source-manifest.json",
     "reconcile:source": "python tools/migration/reconcile_sources.py 'readme/Excel to json' --output tools/migration/reconciliation-report.json",
     "migrate:pb": "python tools/migration/pocketbase_to_supabase.py pocketbase --db ./pb_data/data.db --commit",
-    "stage:excel": "python tools/migration/json_to_staging.py 'readme/Excel to json'"
+    "stage:excel": "python tools/migration/json_to_staging.py 'readme/Excel to json'",
+    "db:regression": "bash scripts/db-regression.sh",
+    "supabase:start": "supabase start",
+    "supabase:reset": "supabase db reset --local",
+    "supabase:stop": "supabase stop"
   },
   "devDependencies": {
     "concurrently": "^10.0.4",
