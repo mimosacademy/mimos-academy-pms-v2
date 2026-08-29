@@ -12,20 +12,20 @@ permissions:
 jobs:
   web:
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: apps/web
     steps:
       - uses: actions/checkout@v5
       - uses: actions/setup-node@v5
         with:
           node-version: 22
           cache: npm
-          cache-dependency-path: apps/web/package.json
-      - run: npm install --no-audit --no-fund
+          cache-dependency-path: package-lock.json
+      - name: Install (workspace lockfile)
+        run: npm ci --no-audit --no-fund
       - run: npm run lint
+      - run: npm run test
       - run: npm run build
 
+  # Static architecture/security checks on the migration source. Fast; no DB.
   supabase-static-security:
     runs-on: ubuntu-latest
     steps:
@@ -79,6 +79,7 @@ jobs:
       - name: Verify production data is not tracked
         run: |
           ! git ls-files apps/pocketbase/pb_data | grep -q .
+          ! git ls-files apps/pocketbase/pocketbase | grep -q .
       - name: Verify security markers
         run: |
           grep -q "private.validate_payment_invariants" supabase/migrations/016_security_integrity_hardening.sql
@@ -91,9 +92,28 @@ jobs:
         run: |
           ! git grep -nEI -- '(BEGIN (RSA|OPENSSH|EC|DSA) PRIVATE KEY|SUPABASE_SERVICE_ROLE_KEY[[:space:]]*=[[:space:]]*[^$\{]|sk-[A-Za-z0-9_-]{20,})' -- ':!*.md' ':!docs/*'
 
+  # Applies the entire migration chain and regression checks inside a disposable
+  # local Supabase stack. This is the authoritative migration/RLS validation gate.
+  # Requires Docker (available on GitHub-hosted runners).
+  supabase-migrations:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: supabase/setup-cli@v1
+        with:
+          version: latest
+      - name: Install PostgreSQL client for regression checks
+        run: sudo apt-get update && sudo apt-get install -y postgresql-client
+      - name: Start local Supabase stack
+        run: supabase start
+      - name: Apply migrations and run security/regression checks
+        run: bash scripts/db-regression.sh
+
   deployment-config-check:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
       - run: test -f apps/web/vercel.json
-      - run: '! grep -nEi "Hostinger VPS for PocketBase|PocketBase backend/database/authentication|start.*PocketBase|deploy.*PocketBase" docs/DEPLOYMENT.md'
+      - run: '! grep -nEi "Hostinger VPS for PocketBase|PocketBase backend/database/authentication|start.*PocketBase|deploy.*PocketBase|PocketBase/VPS|PocketBase service" docs/DEPLOYMENT.md'
+      - run: test -f supabase/config.toml
+      - run: test -f apps/web/.env.example
